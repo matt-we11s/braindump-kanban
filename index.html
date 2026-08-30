@@ -1,259 +1,289 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="dark" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220" id="meta-theme-color">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Farm Dump">
+  <meta name="application-name" content="Farm Dump">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <title>Farm Brain Dump Kanban</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
+    :root, [data-theme="dark"] {
+      --bg: #0b1220;
+      --bg-elev: #111827;
+      --bg-card: #020617;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: #334155;
+      --accent: #10b981;
+      --accent-dim: #064e3b;
+      --accent-text: #ecfdf5;
+      --urgent: #fb7185;
+      --warn: #fb923c;
+      --sky: #38bdf8;
+      --shadow: 0 10px 24px rgba(0,0,0,.4);
+    }
+    [data-theme="sun"] {
+      --bg: #f3e6c4;
+      --bg-elev: #fff6d9;
+      --bg-card: #fffdf4;
+      --text: #1a1408;
+      --muted: #3f3424;
+      --border: #1a1408;
+      --accent: #047857;
+      --accent-dim: #d1fae5;
+      --accent-text: #ffffff;
+      --urgent: #9f1239;
+      --warn: #9a3412;
+      --sky: #075985;
+      --shadow: 0 4px 0 #1a1408;
+    }
     html, body {
       height: 100%;
       height: 100dvh;
       max-height: 100dvh;
       overflow: hidden;
     }
-    .sortable-ghost { opacity: 0.35; transform: scale(0.98); background-color: #334155 !important; border: 2px dashed #38bdf8 !important; }
-    .sortable-chosen { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    [data-theme="sun"] { font-size: 17px; }
+    .chrome { background: var(--bg-elev); border-color: var(--border); color: var(--text); }
+    .panel { background: color-mix(in srgb, var(--bg-elev) 92%, transparent); border: 2px solid var(--border); }
+    .card {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      color: var(--text);
+      box-shadow: var(--shadow);
+    }
+    .muted { color: var(--muted); }
+    .btn {
+      min-height: 48px;
+      min-width: 48px;
+      border: 2px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text);
+      border-radius: 12px;
+      font-weight: 700;
+      touch-action: manipulation;
+    }
+    .btn-accent {
+      background: var(--accent);
+      color: var(--accent-text);
+      border-color: var(--accent);
+    }
+    .chip {
+      border: 2px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text);
+      border-radius: 10px;
+      min-height: 44px;
+      padding: 0 12px;
+      font-weight: 700;
+      font-size: 12px;
+      touch-action: manipulation;
+    }
+    .chip.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+    .input, select.input, textarea.input {
+      background: var(--bg);
+      color: var(--text);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      min-height: 44px;
+      width: 100%;
+      padding: 8px 12px;
+    }
+    .sortable-ghost { opacity: 0.35; transform: scale(0.98); border: 2px dashed var(--sky) !important; }
+    .sortable-chosen { box-shadow: var(--shadow); }
     .sortable-drag { opacity: 0.95; transform: rotate(2deg); }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    .kanban-cards-list {
+    .kanban-cards-list, .scroll-pane {
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
       touch-action: pan-y;
-      scrollbar-gutter: stable;
       scrollbar-width: thin;
-      scrollbar-color: #475569 transparent;
+      scrollbar-color: var(--border) transparent;
     }
-    .kanban-cards-list::-webkit-scrollbar { width: 6px; }
-    .kanban-cards-list::-webkit-scrollbar-track { background: transparent; }
-    .kanban-cards-list::-webkit-scrollbar-thumb { background: #475569; border-radius: 999px; }
     .task-card { touch-action: pan-y; }
+    .status-btn { min-height: 44px; font-size: 12px; font-weight: 800; border-radius: 10px; border: 2px solid var(--border); color: var(--text); background: var(--bg); touch-action: manipulation; }
+    .status-btn.on { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+    .urgent-card { border-left-width: 8px; border-left-color: var(--urgent); }
+    .install-banner { background: var(--accent); color: var(--accent-text); }
+    body.standalone .browser-only { display: none !important; }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 h-full overflow-hidden flex flex-col font-sans antialiased select-none">
-  <!-- Top Navigation Bar -->
-  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 shrink-0 z-40 px-3 py-2.5 sm:px-6">
-    <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <div class="bg-emerald-600/20 text-emerald-400 p-2 rounded-xl border border-emerald-500/30">
-          <i data-lucide="layout-grid" class="w-5 h-5"></i>
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-1.5">
-              <span>Farm Brain Dump</span>
-              <span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-emerald-400 border border-emerald-500/30 font-medium">v.0</span>
-            </h1>
-          </div>
-          <div class="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
-            <span id="sync-status-indicator" class="flex items-center gap-1">
-              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span id="sync-status-text" class="text-[11px] font-medium text-emerald-400">Offline Caching Active</span>
-            </span>
+<body class="h-full overflow-hidden flex flex-col font-sans antialiased">
+  <div id="install-banner" class="browser-only chrome install-banner shrink-0 px-3 py-2.5 hidden">
+    <div class="max-w-7xl mx-auto flex items-start gap-3">
+      <div class="flex-1 text-sm font-semibold leading-snug">
+        This is still the browser. Install it as an app to hide the address bar.
+        <span class="block font-medium opacity-90 mt-0.5">Delete any old home-screen icon first — that one is just a Chrome bookmark.</span>
+      </div>
+      <button id="btn-install" class="btn btn-accent px-3 text-sm shrink-0 hidden">Install</button>
+      <button onclick="hideInstallBanner()" class="btn px-3 text-sm shrink-0 bg-transparent border-white/40">OK</button>
+    </div>
+  </div>
+
+  <header class="chrome border-b-2 shrink-0 z-40 px-3 py-2.5 sm:px-6">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <img src="icons/icon-192.png" alt="" class="w-10 h-10 rounded-xl border-2" style="border-color: var(--border)">
+        <div class="min-w-0">
+          <h1 class="text-base sm:text-lg font-bold tracking-tight truncate">Farm Brain Dump <span class="text-xs px-2 py-0.5 rounded-full border-2 font-medium" style="border-color: var(--accent); color: var(--accent)">v.0</span></h1>
+          <div class="flex items-center gap-2 text-xs muted mt-0.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="sync-status-text" class="text-[11px] font-semibold">Offline Caching Active</span>
             <span>•</span>
-            <span id="storage-count-text" class="text-[11px] text-slate-400">16 tasks</span>
+            <span id="storage-count-text" class="text-[11px]">16 tasks</span>
           </div>
         </div>
       </div>
-      <div class="flex items-center gap-1.5 sm:gap-2">
-        <button id="btn-sync-now" onclick="syncWithGoogleSheet()" title="Sync with Google Sheet"
-          class="p-2 sm:px-3 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 text-xs font-medium border border-slate-700 flex items-center gap-1.5 transition">
-          <i data-lucide="refresh-cw" class="w-4 h-4 text-emerald-400" id="sync-icon"></i>
-          <span class="hidden sm:inline">Sync Sheet</span>
+      <div class="flex items-center gap-1.5">
+        <button onclick="toggleTheme()" title="Outdoor / dark theme" class="btn px-2" id="btn-theme"><i data-lucide="sun" class="w-5 h-5"></i></button>
+        <button onclick="openTownRun()" title="Town run supplies list" class="btn px-2 relative">
+          <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+          <span id="townrun-badge" class="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full text-[10px] flex items-center justify-center font-black" style="background: var(--warn); color: #fff">0</span>
         </button>
-        <button onclick="openSettingsModal()" title="Settings & Connection"
-          class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 border border-slate-700 transition">
-          <i data-lucide="settings" class="w-4 h-4"></i>
+        <button id="btn-sync-now" onclick="syncWithGoogleSheet()" title="Sync with Google Sheet" class="btn px-2">
+          <i data-lucide="refresh-cw" class="w-5 h-5" id="sync-icon" style="color: var(--accent)"></i>
         </button>
-        <button onclick="openTaskModal()" title="Add New Task"
-          class="hidden sm:flex px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-medium items-center gap-1.5 transition shadow-lg shadow-emerald-950/40">
-          <i data-lucide="plus" class="w-4 h-4"></i>
-          <span>New Task</span>
+        <button onclick="openSettingsModal()" title="Settings" class="btn px-2"><i data-lucide="settings" class="w-5 h-5"></i></button>
+        <button onclick="openTaskModal()" title="Add New Task" class="hidden sm:flex btn btn-accent px-3 text-sm items-center gap-1">
+          <i data-lucide="plus" class="w-5 h-5"></i> New
         </button>
       </div>
     </div>
   </header>
 
-  <!-- Metrics Bar -->
-  <section class="bg-slate-900/60 border-b border-slate-800/80 px-3 py-2 sm:px-6 shrink-0">
-    <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-0.5">
-      <div class="flex items-center gap-2 sm:gap-4 shrink-0">
-        <div onclick="setFilter('all')" class="cursor-pointer flex items-center gap-2 bg-slate-800/70 hover:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700/60 transition">
-          <span class="text-xs text-slate-400">Total:</span>
-          <span id="metric-total" class="text-xs font-bold text-white">16</span>
-        </div>
-        <div onclick="setFilter('urgent')" class="cursor-pointer flex items-center gap-2 bg-rose-950/40 hover:bg-rose-950/60 px-2.5 py-1.5 rounded-lg border border-rose-800/50 transition">
-          <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-rose-400"></i>
-          <span class="text-xs text-rose-200">Urgent:</span>
-          <span id="metric-urgent" class="text-xs font-bold text-rose-300">4</span>
-        </div>
-        <div onclick="setFilter('inprogress')" class="cursor-pointer flex items-center gap-2 bg-amber-950/40 hover:bg-amber-950/60 px-2.5 py-1.5 rounded-lg border border-amber-800/50 transition">
-          <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-400"></i>
-          <span class="text-xs text-amber-200">In Progress:</span>
-          <span id="metric-inprogress" class="text-xs font-bold text-amber-300">1</span>
-        </div>
-        <div onclick="setFilter('need_supplies')" class="cursor-pointer flex items-center gap-2 bg-orange-950/40 hover:bg-orange-950/60 px-2.5 py-1.5 rounded-lg border border-orange-800/50 transition">
-          <i data-lucide="package" class="w-3.5 h-3.5 text-orange-400"></i>
-          <span class="text-xs text-orange-200">Need Supplies:</span>
-          <span id="metric-supplies-needed" class="text-xs font-bold text-orange-300">8</span>
-        </div>
-        <div onclick="setFilter('done')" class="cursor-pointer flex items-center gap-2 bg-emerald-950/40 hover:bg-emerald-950/60 px-2.5 py-1.5 rounded-lg border border-emerald-800/50 transition">
-          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
-          <span class="text-xs text-emerald-200">Done:</span>
-          <span id="metric-done" class="text-xs font-bold text-emerald-300">1</span>
-        </div>
-      </div>
-      <div id="filter-active-indicator" class="hidden shrink-0">
-        <button onclick="setFilter('all')" class="text-[11px] text-sky-400 hover:text-sky-300 underline flex items-center gap-1">
-          <i data-lucide="x" class="w-3 h-3"></i> Clear Filter
-        </button>
-      </div>
+  <section class="chrome border-b-2 px-3 py-2 sm:px-6 shrink-0">
+    <div class="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+      <button onclick="setFilter('all')" class="chip shrink-0">Total: <span id="metric-total">16</span></button>
+      <button onclick="setFilter('urgent')" class="chip shrink-0" style="color: var(--urgent); border-color: var(--urgent)">Urgent: <span id="metric-urgent">4</span></button>
+      <button onclick="setFilter('inprogress')" class="chip shrink-0" style="color: var(--warn); border-color: var(--warn)">Active: <span id="metric-inprogress">1</span></button>
+      <button onclick="openTownRun()" class="chip shrink-0" style="color: var(--warn); border-color: var(--warn)">Need Supplies: <span id="metric-supplies-needed">8</span></button>
+      <button onclick="setFilter('done')" class="chip shrink-0" style="color: var(--accent); border-color: var(--accent)">Done: <span id="metric-done">1</span></button>
+      <button id="filter-active-indicator" onclick="setFilter('all')" class="hidden chip shrink-0" style="color: var(--sky)">Clear filter</button>
     </div>
   </section>
 
-  <!-- Filter & Search -->
   <section class="max-w-7xl mx-auto w-full px-3 py-2 sm:px-6 shrink-0">
-    <div class="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center justify-between">
+    <div class="flex flex-col sm:flex-row gap-2">
       <div class="relative flex-1">
-        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-        <input type="text" id="search-input" oninput="renderBoard()" placeholder="Search tasks, notes, or next steps..."
-          class="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-8 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
-        <button id="clear-search-btn" onclick="clearSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
-          <i data-lucide="x" class="w-3.5 h-3.5"></i>
-        </button>
+        <input type="text" id="search-input" oninput="renderBoard()" placeholder="Search tasks, notes, or next steps..." class="input pl-3">
       </div>
-      <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-        <select id="filter-subject" onchange="renderBoard()" class="bg-slate-900 border border-slate-800 text-slate-300 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none">
-          <option value="all">All Subjects</option>
-          <option value="Garden">Garden</option>
-          <option value="Greenhouse">Greenhouse</option>
-          <option value="House Exterior">House Exterior</option>
-          <option value="House Interior">House Interior</option>
-          <option value="Yard">Yard</option>
-          <option value="Off-Property">Off-Property</option>
-        </select>
-        <select id="filter-priority" onchange="renderBoard()" class="bg-slate-900 border border-slate-800 text-slate-300 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none">
+      <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+        <select id="filter-subject" onchange="renderBoard()" class="input w-auto"></select>
+        <select id="filter-priority" onchange="renderBoard()" class="input w-auto">
           <option value="all">All Priorities</option>
-          <option value="High">High Priority</option>
-          <option value="Medium">Medium Priority</option>
-          <option value="Low">Low Priority</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
         </select>
-        <select id="filter-supplies" onchange="renderBoard()" class="bg-slate-900 border border-slate-800 text-slate-300 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none">
+        <select id="filter-supplies" onchange="renderBoard()" class="input w-auto">
           <option value="all">All Supplies</option>
-          <option value="Y">Supplies Ready (Y)</option>
-          <option value="N">Needs Supplies (N)</option>
+          <option value="Y">Ready</option>
+          <option value="N">Needed</option>
         </select>
       </div>
     </div>
   </section>
 
-  <!-- Mobile Column Switcher -->
   <div class="md:hidden max-w-7xl mx-auto w-full px-3 mb-2 shrink-0">
-    <div class="grid grid-cols-4 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-center text-xs">
-      <button onclick="setMobileTab('Backlog')" id="tab-Backlog" class="mobile-tab-btn py-1.5 px-1 rounded-lg font-medium transition text-slate-400">Backlog (<span id="tab-count-Backlog">0</span>)</button>
-      <button onclick="setMobileTab('Not Started')" id="tab-NotStarted" class="mobile-tab-btn py-1.5 px-1 rounded-lg font-medium transition bg-slate-800 text-white shadow">Queued (<span id="tab-count-NotStarted">0</span>)</button>
-      <button onclick="setMobileTab('In progress')" id="tab-Inprogress" class="mobile-tab-btn py-1.5 px-1 rounded-lg font-medium transition text-amber-400">Active (<span id="tab-count-Inprogress">0</span>)</button>
-      <button onclick="setMobileTab('Done')" id="tab-Done" class="mobile-tab-btn py-1.5 px-1 rounded-lg font-medium transition text-emerald-400">Done (<span id="tab-count-Done">0</span>)</button>
+    <div class="grid grid-cols-4 gap-1 p-1 rounded-xl panel text-center text-xs">
+      <button onclick="setMobileTab('Backlog')" id="tab-Backlog" class="chip">Backlog (<span id="tab-count-Backlog">0</span>)</button>
+      <button onclick="setMobileTab('Not Started')" id="tab-NotStarted" class="chip active">Queued (<span id="tab-count-NotStarted">0</span>)</button>
+      <button onclick="setMobileTab('In progress')" id="tab-Inprogress" class="chip">Active (<span id="tab-count-Inprogress">0</span>)</button>
+      <button onclick="setMobileTab('Done')" id="tab-Done" class="chip">Done (<span id="tab-count-Done">0</span>)</button>
     </div>
   </div>
 
-  <!-- Board Columns -->
   <main class="max-w-7xl mx-auto w-full px-3 sm:px-6 flex-1 min-h-0 overflow-hidden flex flex-col">
     <div class="grid grid-cols-1 md:grid-cols-4 gap-3 sm:gap-4 flex-1 min-h-0 h-full items-stretch">
-      <!-- Backlog -->
-      <div id="col-container-Backlog" class="kanban-column-wrapper bg-slate-900/80 rounded-2xl border border-slate-800/80 p-3 flex flex-col h-full min-h-0 overflow-hidden">
-        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 shrink-0">
-          <div class="flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
-            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Backlog</h2>
-          </div>
-          <span id="count-Backlog" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">0</span>
+      <div id="col-container-Backlog" class="panel rounded-2xl p-3 flex flex-col h-full min-h-0 overflow-hidden">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b-2 shrink-0" style="border-color: var(--border)">
+          <h2 class="text-xs font-bold uppercase tracking-wider">Backlog</h2>
+          <span id="count-Backlog" class="text-xs font-bold px-2 py-0.5 rounded-full border-2" style="border-color: var(--border)">0</span>
         </div>
-        <div id="column-Backlog" data-status="Backlog" class="kanban-cards-list space-y-2.5 flex-1 min-h-0 overflow-y-auto pb-24 md:pb-3"></div>
+        <div id="column-Backlog" data-status="Backlog" class="kanban-cards-list space-y-3 flex-1 min-h-0 overflow-y-auto pb-24 md:pb-3"></div>
       </div>
-      <!-- Not Started -->
-      <div id="col-container-NotStarted" class="kanban-column-wrapper bg-slate-900/80 rounded-2xl border border-slate-800/80 p-3 flex flex-col h-full min-h-0 overflow-hidden">
-        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 shrink-0">
-          <div class="flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span>
-            <h2 class="text-xs font-bold uppercase tracking-wider text-sky-300">Not Started</h2>
-          </div>
-          <span id="count-NotStarted" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-sky-400">0</span>
+      <div id="col-container-NotStarted" class="panel rounded-2xl p-3 flex flex-col h-full min-h-0 overflow-hidden">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b-2 shrink-0" style="border-color: var(--border)">
+          <h2 class="text-xs font-bold uppercase tracking-wider" style="color: var(--sky)">Not Started</h2>
+          <span id="count-NotStarted" class="text-xs font-bold px-2 py-0.5 rounded-full border-2" style="border-color: var(--border)">0</span>
         </div>
-        <div id="column-NotStarted" data-status="Not Started" class="kanban-cards-list space-y-2.5 flex-1 min-h-0 overflow-y-auto pb-24 md:pb-3"></div>
+        <div id="column-NotStarted" data-status="Not Started" class="kanban-cards-list space-y-3 flex-1 min-h-0 overflow-y-auto pb-24 md:pb-3"></div>
       </div>
-      <!-- In Progress -->
-      <div id="col-container-Inprogress" class="kanban-column-wrapper bg-slate-900/80 rounded-2xl border border-amber-500/20 p-3 flex flex-col h-full min-h-0 overflow-hidden shadow-lg shadow-amber-950/10">
-        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 shrink-0">
-          <div class="flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
-            <h2 class="text-xs font-bold uppercase tracking-wider text-amber-300">In Progress</h2>
-          </div>
-          <span id="count-Inprogress" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-950/40 text-amber-400">0</span>
+      <div id="col-container-Inprogress" class="panel rounded-2xl p-3 flex flex-col h-full min-h-0 overflow-hidden">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b-2 shrink-0" style="border-color: var(--border)">
+          <h2 class="text-xs font-bold uppercase tracking-wider" style="color: var(--warn)">In Progress</h2>
+          <span id="count-Inprogress" class="text-xs font-bold px-2 py-0.5 rounded-full border-2" style="border-color: var(--border)">0</span>
         </div>
-        <div id="column-Inprogress" data-status="In progress" class="kanban-cards-list space-y-2.5 flex-1 min-h-0 overflow-y-auto pb-24 md:pb-3"></div>
+        <div id="column-Inprogress" data-status="In progress" class="kanban-cards-list space-y-3 flex-1 min-h-0 overflow-y-auto pb-24 md:pb-3"></div>
       </div>
-      <!-- Done -->
-      <div id="col-container-Done" class="kanban-column-wrapper bg-slate-900/80 rounded-2xl border border-emerald-500/20 p-3 flex flex-col h-full min-h-0 overflow-hidden">
-        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 shrink-0">
-          <div class="flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-            <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-300">Done</h2>
-          </div>
-          <span id="count-Done" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-950/40 text-emerald-400">0</span>
+      <div id="col-container-Done" class="panel rounded-2xl p-3 flex flex-col h-full min-h-0 overflow-hidden">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b-2 shrink-0" style="border-color: var(--border)">
+          <h2 class="text-xs font-bold uppercase tracking-wider" style="color: var(--accent)">Done</h2>
+          <span id="count-Done" class="text-xs font-bold px-2 py-0.5 rounded-full border-2" style="border-color: var(--border)">0</span>
         </div>
-        <div id="column-Done" data-status="Done" class="kanban-cards-list space-y-2.5 flex-1 min-h-0 overflow-y-auto pb-24 md:pb-3"></div>
+        <div id="column-Done" data-status="Done" class="kanban-cards-list space-y-3 flex-1 min-h-0 overflow-y-auto pb-24 md:pb-3"></div>
       </div>
     </div>
   </main>
 
-  <!-- Mobile FAB -->
   <button onclick="openTaskModal()" title="Add Task"
-    class="sm:hidden fixed right-4 z-40 w-14 h-14 bg-emerald-600 active:bg-emerald-700 text-white rounded-full shadow-2xl flex items-center justify-center border-2 border-emerald-400/40 transition active:scale-95"
-    style="bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));">
-    <i data-lucide="plus" class="w-7 h-7"></i>
+    class="sm:hidden fixed right-4 z-40 w-16 h-16 rounded-full flex items-center justify-center btn-accent border-2"
+    style="bottom: max(1.25rem, env(safe-area-inset-bottom, 0px)); border-color: var(--accent)">
+    <i data-lucide="plus" class="w-8 h-8"></i>
   </button>
 
-  <!-- Modal: Task Form -->
-  <div id="task-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4 overflow-y-auto">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl p-4 sm:p-6 space-y-4 my-auto">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 id="modal-title" class="text-base font-bold text-white flex items-center gap-2">
-          <i data-lucide="edit-3" class="w-4 h-4 text-emerald-400"></i>
-          <span>Edit Task</span>
-        </h3>
-        <button onclick="closeTaskModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
+  <div id="townrun-view" class="hidden fixed inset-0 z-40 flex flex-col" style="background: var(--bg); padding-top: env(safe-area-inset-top)">
+    <div class="chrome border-b-2 px-3 py-3 flex items-center justify-between gap-2">
+      <div>
+        <h2 class="text-lg font-black">Town Run</h2>
+        <p class="text-xs muted" id="townrun-sub">Items that still need supplies</p>
       </div>
+      <button onclick="closeTownRun()" class="btn px-3 text-sm">Close</button>
+    </div>
+    <div id="townrun-list" class="scroll-pane flex-1 overflow-y-auto px-3 py-3 space-y-4 pb-10"></div>
+  </div>
 
+  <div id="task-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 overflow-y-auto" style="background: rgba(0,0,0,.65)">
+    <div class="card rounded-2xl w-full max-w-lg p-4 sm:p-6 space-y-4 my-auto">
+      <div class="flex items-center justify-between border-b-2 pb-3" style="border-color: var(--border)">
+        <h3 id="modal-title" class="text-base font-bold">Edit Task</h3>
+        <button onclick="closeTaskModal()" class="btn px-2"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
       <form id="task-form" onsubmit="saveTaskForm(event)" class="space-y-3.5">
         <input type="hidden" id="form-task-id">
         <div>
-          <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">Task Summary *</label>
-          <input type="text" id="form-summary" required placeholder="e.g., Replace pergola verticals with 4x4s"
-            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+          <label class="block text-[11px] font-bold uppercase mb-1">Task Summary *</label>
+          <input type="text" id="form-summary" required class="input" placeholder="e.g., Replace pergola verticals with 4x4s">
         </div>
         <div>
-          <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">Raw Brain Dump Note</label>
-          <textarea id="form-raw-note" rows="2" placeholder="Original unfiltered thought..."
-            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"></textarea>
+          <label class="block text-[11px] font-bold uppercase mb-1">Raw Brain Dump Note</label>
+          <textarea id="form-raw-note" rows="2" class="input" placeholder="Original unfiltered thought..."></textarea>
         </div>
         <div>
-          <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">Actionable Next Step</label>
-          <input type="text" id="form-next-step" placeholder="e.g., Purchase 4x4s and anchor mounts"
-            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-amber-200 focus:outline-none focus:border-emerald-500">
+          <label class="block text-[11px] font-bold uppercase mb-1">Actionable Next Step</label>
+          <input type="text" id="form-next-step" class="input" placeholder="e.g., Purchase 4x4s and anchor mounts">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">Status</label>
-            <select id="form-status" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+            <label class="block text-[11px] font-bold uppercase mb-1">Status</label>
+            <select id="form-status" class="input">
               <option value="Not Started">Not Started</option>
               <option value="In progress">In Progress</option>
               <option value="Backlog">Backlog</option>
@@ -261,8 +291,8 @@
             </select>
           </div>
           <div>
-            <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">Priority</label>
-            <select id="form-priority" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+            <label class="block text-[11px] font-bold uppercase mb-1">Priority</label>
+            <select id="form-priority" class="input">
               <option value="High">High (Urgent)</option>
               <option value="Medium">Medium</option>
               <option value="Low">Low</option>
@@ -271,19 +301,12 @@
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">Subject</label>
-            <select id="form-subject" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
-              <option value="Garden">Garden</option>
-              <option value="Greenhouse">Greenhouse</option>
-              <option value="House Exterior">House Exterior</option>
-              <option value="House Interior">House Interior</option>
-              <option value="Yard">Yard</option>
-              <option value="Off-Property">Off-Property</option>
-            </select>
+            <label class="block text-[11px] font-bold uppercase mb-1">Subject</label>
+            <select id="form-subject" class="input"></select>
           </div>
           <div>
-            <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">Category</label>
-            <select id="form-category" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+            <label class="block text-[11px] font-bold uppercase mb-1">Category</label>
+            <select id="form-category" class="input">
               <option value="Improvement">Improvement</option>
               <option value="Maintenance">Maintenance</option>
               <option value="Repair">Repair</option>
@@ -294,8 +317,8 @@
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">Estimated Effort</label>
-            <select id="form-effort" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+            <label class="block text-[11px] font-bold uppercase mb-1">Estimated Effort</label>
+            <select id="form-effort" class="input">
               <option value="<30 mins">&lt;30 mins</option>
               <option value="1-2 hours">1-2 hours</option>
               <option value="Half day">Half day</option>
@@ -303,74 +326,73 @@
             </select>
           </div>
           <div>
-            <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">Supplies on Hand?</label>
-            <select id="form-supplies" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+            <label class="block text-[11px] font-bold uppercase mb-1">Supplies on Hand?</label>
+            <select id="form-supplies" class="input">
               <option value="Y">Yes (Ready)</option>
               <option value="N">No (Needed)</option>
             </select>
           </div>
         </div>
-        <div class="flex items-center justify-between pt-3 border-t border-slate-800">
-          <button type="button" id="btn-delete-task" onclick="deleteCurrentTask()" class="hidden text-xs text-rose-400 hover:text-rose-300 px-3 py-2 rounded-lg transition flex items-center gap-1">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-            <span>Delete</span>
-          </button>
+        <div class="flex items-center justify-between pt-3 border-t-2" style="border-color: var(--border)">
+          <button type="button" id="btn-delete-task" onclick="deleteCurrentTask()" class="hidden btn px-3 text-sm" style="color: var(--urgent)">Delete</button>
           <div class="flex items-center gap-2 ml-auto">
-            <button type="button" onclick="closeTaskModal()" class="px-3.5 py-2 rounded-lg bg-slate-800 text-xs text-slate-300">Cancel</button>
-            <button type="submit" class="px-4 py-2 rounded-lg bg-emerald-600 text-xs font-medium text-white shadow-lg shadow-emerald-950">Save Task</button>
+            <button type="button" onclick="closeTaskModal()" class="btn px-3 text-sm">Cancel</button>
+            <button type="submit" class="btn btn-accent px-4 text-sm">Save Task</button>
           </div>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Modal: Settings & Sync -->
-  <div id="settings-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4 overflow-y-auto">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl p-4 sm:p-6 space-y-4 my-auto">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 class="text-base font-bold text-white flex items-center gap-2">
-          <i data-lucide="cloud" class="w-4 h-4 text-emerald-400"></i>
-          <span>Google Sheet Two-Way Sync</span>
-        </h3>
-        <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
+  <div id="settings-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 overflow-y-auto" style="background: rgba(0,0,0,.65)">
+    <div class="card rounded-2xl w-full max-w-lg p-4 sm:p-6 space-y-4 my-auto">
+      <div class="flex items-center justify-between border-b-2 pb-3" style="border-color: var(--border)">
+        <h3 class="text-base font-bold">Settings & Sync</h3>
+        <button onclick="closeSettingsModal()" class="btn px-2"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
-      <div class="space-y-4 text-xs text-slate-300">
+      <div class="space-y-3 text-sm">
+        <div class="browser-only panel rounded-xl p-3 text-sm">
+          <p class="font-bold mb-1">Install as its own app</p>
+          <ol class="list-decimal pl-5 space-y-1 muted">
+            <li>Delete the old home-screen icon if it still opens with an address bar.</li>
+            <li>Open this page in Chrome.</li>
+            <li>Tap <strong>Install</strong> above, or Chrome ⋮ → <strong>Install app</strong>.</li>
+            <li>Launch from the new icon. It should be fullscreen, no URL bar.</li>
+          </ol>
+          <button id="btn-install-settings" class="btn btn-accent w-full mt-3 text-sm hidden">Install app now</button>
+        </div>
         <div>
-          <label class="block text-[11px] font-semibold text-slate-200 uppercase tracking-wider mb-1">Google Apps Script Web App URL</label>
-          <input type="url" id="settings-script-url" placeholder="https://script.google.com/macros/s/.../exec"
-            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
-          <p class="text-[11px] text-slate-500 mt-1">Paste your deployed Web App URL here to enable automatic 2-way cloud syncing.</p>
+          <label class="block text-[11px] font-bold uppercase mb-1">Google Apps Script Web App URL</label>
+          <input type="url" id="settings-script-url" class="input" placeholder="https://script.google.com/macros/s/.../exec">
+          <p class="text-[11px] muted mt-1">Pre-filled with your Brain Dump v.0 script. Keep this unless you redeploy to a new URL.</p>
         </div>
-        <div class="grid grid-cols-2 gap-2 pt-1">
-          <button onclick="pullFromGoogleSheet()" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200 text-xs font-medium border border-slate-700 flex items-center justify-center gap-1.5">
-            <i data-lucide="arrow-down-circle" class="w-3.5 h-3.5 text-sky-400"></i>
-            <span>Pull From Sheet</span>
-          </button>
-          <button onclick="pushToGoogleSheet()" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200 text-xs font-medium border border-slate-700 flex items-center justify-center gap-1.5">
-            <i data-lucide="arrow-up-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
-            <span>Push All to Sheet</span>
-          </button>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="pullFromGoogleSheet()" class="btn text-sm">Pull & merge</button>
+          <button onclick="pushToGoogleSheet()" class="btn text-sm">Push dirty tasks</button>
         </div>
-        <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
-          <button onclick="exportDataJson()" class="text-xs text-sky-400 hover:underline flex items-center gap-1">
-            <i data-lucide="download" class="w-3.5 h-3.5"></i> Export JSON
-          </button>
-          <button onclick="resetToDefaultTasks()" class="text-xs text-rose-400 hover:underline flex items-center gap-1">
-            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset to Default
-          </button>
+        <div class="panel rounded-xl p-3 text-[12px] leading-relaxed">
+          <p class="font-bold mb-1">Update the sheet script (needed for trustworthy IDs)</p>
+          <p class="muted mb-2">Sheet → Extensions → Apps Script → replace code with <code>apps-script.js</code> from the GitHub repo → Deploy → Manage deployments → pencil → New version.</p>
+          <button type="button" onclick="copyAppsScript()" class="btn w-full text-sm">Copy Apps Script to clipboard</button>
+        </div>
+        <div class="flex items-center justify-between pt-1">
+          <button onclick="exportDataJson()" class="text-sm font-bold" style="color: var(--sky)">Export JSON</button>
+          <button onclick="resetToDefaultTasks()" class="text-sm font-bold" style="color: var(--urgent)">Reset to Default</button>
         </div>
       </div>
-      <div class="pt-2">
-        <button onclick="saveSettings()" class="w-full py-2.5 rounded-lg bg-emerald-600 text-xs font-semibold text-white shadow-lg shadow-emerald-950">
-          Save Settings
-        </button>
-      </div>
+      <button onclick="saveSettings()" class="btn btn-accent w-full">Save Settings</button>
     </div>
   </div>
 
   <script>
+    const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyu4Xy4_59zuNaE6wT0SFAh9jNeL4atJxsFIMbLTf_qhLgbNbC_-aP6nrzp4OGF9Kfc/exec';
+    const SUBJECTS = ['Garden', 'Greenhouse', 'House Exterior', 'House Interior', 'Yard', 'Off-Property'];
+    const STATUSES = [
+      { value: 'Backlog', label: 'Backlog' },
+      { value: 'Not Started', label: 'Queue' },
+      { value: 'In progress', label: 'Active' },
+      { value: 'Done', label: 'Done' }
+    ];
     const DEFAULT_TASKS = [
       {"id": "task_1", "timestamp": "2026-08-02", "raw_note": "Drive t-posts into ground for garden gate posts", "summary": "Drive garden gate t-posts", "scope": "Small Task", "category": "Improvement", "subject": "Garden", "complexity": "Medium", "effort": "1-2 hours", "priority": "Medium", "status": "Done", "next_step": "Gather tools and materials", "supplies_on_hand": "Y"},
       {"id": "task_2", "timestamp": "2026-08-02", "raw_note": "Trench and bury PVC for greenhouse", "summary": "Trench and bury greenhouse PVC", "scope": "Large Project", "category": "Improvement", "subject": "Greenhouse", "complexity": "High", "effort": "Half day", "priority": "Medium", "status": "In progress", "next_step": "repair irrigation to continue", "supplies_on_hand": "Y"},
@@ -393,37 +415,122 @@
     let tasks = [];
     let activeMobileTab = 'Not Started';
     let currentFilter = 'all';
-    let scriptUrl = localStorage.getItem('farm_braindump_script_url') || '';
+    let scriptUrl = localStorage.getItem('farm_braindump_script_url') || DEFAULT_SCRIPT_URL;
+    let deferredPrompt = null;
+    let syncing = false;
 
     document.addEventListener('DOMContentLoaded', () => {
+      applyTheme(localStorage.getItem('farm_braindump_theme') || 'dark');
+      fillSubjectSelects();
       loadTasks();
       initSortable();
       renderBoard();
-      updateMetrics();
-      lucide.createIcons();
-      window.addEventListener('online', updateNetworkStatus);
-      window.addEventListener('offline', updateNetworkStatus);
+      setupPwa();
       updateNetworkStatus();
+      lucide.createIcons();
+      window.addEventListener('online', () => { updateNetworkStatus(); flushDirtyTasks(); });
+      window.addEventListener('offline', updateNetworkStatus);
+      if (navigator.onLine && scriptUrl) {
+        syncWithGoogleSheet({ quiet: true });
+      }
     });
 
-    function updateNetworkStatus() {
-      const statusText = document.getElementById('sync-status-text');
-      if (navigator.onLine) {
-        statusText.textContent = scriptUrl ? 'Cloud Sync Ready' : 'Offline Caching Active';
-        statusText.className = scriptUrl ? 'text-[11px] font-medium text-emerald-400' : 'text-[11px] font-medium text-sky-400';
-      } else {
-        statusText.textContent = 'Offline (Working locally)';
-        statusText.className = 'text-[11px] font-medium text-amber-400';
+    function fillSubjectSelects() {
+      const opts = ['<option value="all">All Subjects</option>'].concat(SUBJECTS.map(s => `<option value="${s}">${s}</option>`)).join('');
+      document.getElementById('filter-subject').innerHTML = opts;
+      document.getElementById('form-subject').innerHTML = SUBJECTS.map(s => `<option value="${s}">${s}</option>`).join('');
+    }
+
+    function isStandalone() {
+      return window.matchMedia('(display-mode: standalone)').matches
+        || window.matchMedia('(display-mode: fullscreen)').matches
+        || window.navigator.standalone === true;
+    }
+
+    function setupPwa() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
       }
+      if (isStandalone()) {
+        document.body.classList.add('standalone');
+        return;
+      }
+      const banner = document.getElementById('install-banner');
+      if (localStorage.getItem('farm_braindump_hide_install') !== '1') banner.classList.remove('hidden');
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        document.getElementById('btn-install').classList.remove('hidden');
+        document.getElementById('btn-install-settings').classList.remove('hidden');
+        banner.classList.remove('hidden');
+      });
+      document.getElementById('btn-install').addEventListener('click', installApp);
+      document.getElementById('btn-install-settings').addEventListener('click', installApp);
+    }
+
+    async function installApp() {
+      if (!deferredPrompt) {
+        alert('In Chrome: tap the ⋮ menu → Install app.\n\nIf you already added a home-screen shortcut, delete it first. That old icon is a bookmark and will keep the address bar.');
+        return;
+      }
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+    }
+
+    function hideInstallBanner() {
+      document.getElementById('install-banner').classList.add('hidden');
+      localStorage.setItem('farm_braindump_hide_install', '1');
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.classList.toggle('dark', theme !== 'sun');
+      localStorage.setItem('farm_braindump_theme', theme);
+      document.getElementById('meta-theme-color').setAttribute('content', theme === 'sun' ? '#f3e6c4' : '#0b1220');
+      const btn = document.getElementById('btn-theme');
+      if (btn) btn.innerHTML = theme === 'sun' ? '<i data-lucide="moon" class="w-5 h-5"></i>' : '<i data-lucide="sun" class="w-5 h-5"></i>';
+      lucide.createIcons();
+    }
+
+    function toggleTheme() {
+      const next = (document.documentElement.getAttribute('data-theme') === 'sun') ? 'dark' : 'sun';
+      applyTheme(next);
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    function newTaskId() {
+      if (crypto.randomUUID) return 'task_' + crypto.randomUUID();
+      return 'task_' + Date.now() + '_' + Math.random().toString(16).slice(2);
+    }
+
+    function fingerprint(t) {
+      return (String(t.summary || '').trim().toLowerCase() + '||' + String(t.raw_note || '').trim().toLowerCase());
+    }
+
+    function migrateTask(t) {
+      if (!t.id) t.id = newTaskId();
+      if (!t.updated_at) t.updated_at = Date.now();
+      if (typeof t.dirty !== 'boolean') t.dirty = false;
+      t.status = normalizeStatus(t.status);
+      t.supplies_on_hand = String(t.supplies_on_hand || 'N').toUpperCase() === 'Y' ? 'Y' : 'N';
+      return t;
     }
 
     function loadTasks() {
       const saved = localStorage.getItem('farm_braindump_tasks_v1');
       if (saved) {
-        try { tasks = JSON.parse(saved); } catch (e) { tasks = [...DEFAULT_TASKS]; }
+        try { tasks = JSON.parse(saved).map(migrateTask); }
+        catch (e) { tasks = DEFAULT_TASKS.map(t => migrateTask({ ...t })); }
       } else {
-        tasks = [...DEFAULT_TASKS];
+        tasks = DEFAULT_TASKS.map(t => migrateTask({ ...t }));
         saveTasksLocally();
+      }
+      if (!localStorage.getItem('farm_braindump_script_url')) {
+        localStorage.setItem('farm_braindump_script_url', DEFAULT_SCRIPT_URL);
       }
     }
 
@@ -432,39 +539,32 @@
       document.getElementById('storage-count-text').textContent = tasks.length + ' tasks';
     }
 
-    function getSubjectBadge(subject) {
-      const map = {
-        'Garden': { bg: 'bg-emerald-950/60 text-emerald-300 border-emerald-800/60', icon: '🌿' },
-        'Greenhouse': { bg: 'bg-teal-950/60 text-teal-300 border-teal-800/60', icon: '🪴' },
-        'House Exterior': { bg: 'bg-indigo-950/60 text-indigo-300 border-indigo-800/60', icon: '🏡' },
-        'House Interior': { bg: 'bg-purple-950/60 text-purple-300 border-purple-800/60', icon: '🛋️' },
-        'Yard': { bg: 'bg-lime-950/60 text-lime-300 border-lime-800/60', icon: '🌲' },
-        'Off-Property': { bg: 'bg-blue-950/60 text-blue-300 border-blue-800/60', icon: '🚙' }
-      };
-      const item = map[subject] || { bg: 'bg-slate-800 text-slate-300 border-slate-700', icon: '📌' };
-      return `<span class="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border ${item.bg}"><span>${item.icon}</span> <span>${subject}</span></span>`;
+    function markDirty(task) {
+      task.dirty = true;
+      task.updated_at = Date.now();
+      saveTasksLocally();
     }
 
-    function getPriorityBadge(priority) {
-      if (priority === 'High') return `<span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-950/80 text-rose-300 border border-rose-700/60">⚡ Urgent</span>`;
-      if (priority === 'Medium') return `<span class="inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-950/60 text-amber-300 border border-amber-800/50">Medium</span>`;
-      return `<span class="inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">Low</span>`;
+    function updateNetworkStatus() {
+      const el = document.getElementById('sync-status-text');
+      if (!navigator.onLine) {
+        el.textContent = 'Offline — saved on this phone';
+        return;
+      }
+      const dirty = tasks.filter(t => t.dirty).length;
+      if (dirty) el.textContent = dirty + ' change' + (dirty === 1 ? '' : 's') + ' waiting to sync';
+      else el.textContent = scriptUrl ? 'Online, sheet connected' : 'Online, no sheet URL';
     }
 
-    function getEffortBadge(effort) {
-      return `<span class="text-[10px] text-slate-400 bg-slate-800/80 px-1.5 py-0.5 rounded border border-slate-700/60 font-mono">⏱ ${effort}</span>`;
-    }
-
-    function getSuppliesPill(taskId, supplies) {
-      const isYes = (supplies === 'Y');
-      const bg = isYes ? 'bg-emerald-950/70 text-emerald-300 border-emerald-700/60' : 'bg-orange-950/70 text-orange-300 border-orange-700/60';
-      const label = isYes ? '✓ Supplies: Ready' : '⚠️ Supplies: Needed';
-      return `<button onclick="toggleSupplies('${taskId}', event)" title="Tap to toggle supplies" class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition active:scale-95 ${bg}"><span>${label}</span></button>`;
+    function setSyncMessage(text, ok) {
+      const el = document.getElementById('sync-status-text');
+      el.textContent = text;
+      el.style.color = ok === false ? 'var(--urgent)' : ok === true ? 'var(--accent)' : 'var(--muted)';
     }
 
     function normalizeStatus(status) {
       if (!status) return 'Not Started';
-      const s = status.trim().toLowerCase();
+      const s = String(status).trim().toLowerCase();
       if (s === 'in progress' || s === 'inprogress') return 'In progress';
       if (s === 'done' || s === 'completed') return 'Done';
       if (s === 'backlog') return 'Backlog';
@@ -479,19 +579,15 @@
         'Done': document.getElementById('column-Done')
       };
       Object.values(cols).forEach(c => c.innerHTML = '');
-
       const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
       const subjectVal = document.getElementById('filter-subject').value;
       const priorityVal = document.getElementById('filter-priority').value;
       const suppliesVal = document.getElementById('filter-supplies').value;
-      document.getElementById('clear-search-btn').classList.toggle('hidden', !searchVal);
-
       const counts = { 'Backlog': 0, 'Not Started': 0, 'In progress': 0, 'Done': 0 };
 
       tasks.forEach(task => {
         const normStatus = normalizeStatus(task.status);
         let matches = true;
-
         if (searchVal) {
           const text = `${task.summary || ''} ${task.raw_note || ''} ${task.next_step || ''} ${task.subject || ''}`.toLowerCase();
           if (!text.includes(searchVal)) matches = false;
@@ -499,89 +595,107 @@
         if (subjectVal !== 'all' && task.subject !== subjectVal) matches = false;
         if (priorityVal !== 'all' && task.priority !== priorityVal) matches = false;
         if (suppliesVal !== 'all' && task.supplies_on_hand !== suppliesVal) matches = false;
-
         if (currentFilter === 'urgent' && task.priority !== 'High') matches = false;
         if (currentFilter === 'inprogress' && normStatus !== 'In progress') matches = false;
         if (currentFilter === 'need_supplies' && task.supplies_on_hand !== 'N') matches = false;
         if (currentFilter === 'done' && normStatus !== 'Done') matches = false;
-
         counts[normStatus] = (counts[normStatus] || 0) + 1;
         if (!matches) return;
-
-        const card = createCardElement(task);
-        if (cols[normStatus]) cols[normStatus].appendChild(card);
+        if (cols[normStatus]) cols[normStatus].appendChild(createCardElement(task));
       });
 
       document.getElementById('count-Backlog').textContent = counts['Backlog'] || 0;
       document.getElementById('count-NotStarted').textContent = counts['Not Started'] || 0;
       document.getElementById('count-Inprogress').textContent = counts['In progress'] || 0;
       document.getElementById('count-Done').textContent = counts['Done'] || 0;
-
       document.getElementById('tab-count-Backlog').textContent = counts['Backlog'] || 0;
       document.getElementById('tab-count-NotStarted').textContent = counts['Not Started'] || 0;
       document.getElementById('tab-count-Inprogress').textContent = counts['In progress'] || 0;
       document.getElementById('tab-count-Done').textContent = counts['Done'] || 0;
 
-      Object.entries(cols).forEach(([st, container]) => {
+      Object.values(cols).forEach(container => {
         if (container.children.length === 0) {
-          container.innerHTML = `<div class="flex flex-col items-center justify-center p-6 text-center text-slate-500 border border-dashed border-slate-800/80 rounded-xl bg-slate-950/30"><span class="text-xs">No tasks</span></div>`;
+          container.innerHTML = '<div class="p-6 text-center muted border-2 border-dashed rounded-xl text-xs" style="border-color: var(--border)">No tasks</div>';
         }
       });
 
       updateMobileVisibility();
       updateMetrics();
+      if (document.getElementById('townrun-view').classList.contains('hidden') === false) renderTownRun();
       lucide.createIcons();
     }
 
     function createCardElement(task) {
       const card = document.createElement('div');
       const isUrgent = task.priority === 'High';
-      const borderUrgentClass = isUrgent ? 'border-l-4 border-l-rose-500' : 'border-l-2 border-l-slate-700';
-
-      card.className = `task-card bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-3 shadow-sm transition cursor-grab active:cursor-grabbing group relative ${borderUrgentClass}`;
+      const status = normalizeStatus(task.status);
+      card.className = 'task-card card rounded-xl p-3 ' + (isUrgent ? 'urgent-card' : '');
       card.setAttribute('data-id', task.id);
-
+      const ready = task.supplies_on_hand === 'Y';
+      const statusBtns = STATUSES.map(s => {
+        const on = s.value === status ? 'on' : '';
+        return `<button type="button" class="status-btn ${on}" onclick="quickMoveTask('${escapeHtml(task.id)}', '${s.value}')">${s.label}</button>`;
+      }).join('');
       card.innerHTML = `
-        <div class="flex items-center justify-between gap-1 mb-2">
-          <div class="flex items-center gap-1.5 flex-wrap">
-            ${getSubjectBadge(task.subject || 'Farm')}
-            ${getPriorityBadge(task.priority || 'Medium')}
+        <div class="flex items-start justify-between gap-2 mb-2">
+          <div class="flex flex-wrap gap-1.5 text-[11px] font-bold">
+            <span class="px-2 py-1 rounded-lg border-2" style="border-color: var(--border)">${escapeHtml(task.subject || 'Farm')}</span>
+            <span class="px-2 py-1 rounded-lg border-2" style="border-color: ${isUrgent ? 'var(--urgent)' : 'var(--border)'}; color: ${isUrgent ? 'var(--urgent)' : 'inherit'}">${isUrgent ? 'URGENT' : escapeHtml(task.priority || 'Medium')}</span>
+            <span class="px-2 py-1 rounded-lg border-2 muted" style="border-color: var(--border)">${escapeHtml(task.effort || '')}</span>
           </div>
-          ${getEffortBadge(task.effort || '1-2 hrs')}
+          <button type="button" onclick="openTaskModal('${escapeHtml(task.id)}')" class="btn px-2 shrink-0" title="Edit"><i data-lucide="edit-2" class="w-5 h-5"></i></button>
         </div>
-        <div class="mb-1.5">
-          <h4 class="text-xs sm:text-sm font-semibold text-slate-100 leading-snug group-hover:text-emerald-300 transition" onclick="openTaskModal('${task.id}')">
-            ${task.summary || task.raw_note}
-          </h4>
-          ${task.raw_note && task.raw_note !== task.summary ? `<p class="text-[11px] text-slate-400 line-clamp-1 mt-0.5">${task.raw_note}</p>` : ''}
-        </div>
-        ${task.next_step ? `
-          <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2 my-2 text-[11px] text-amber-200 flex items-start gap-1.5">
-            <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5"></i>
-            <span class="leading-tight">${task.next_step}</span>
-          </div>
-        ` : ''}
-        <div class="flex items-center justify-between gap-2 pt-1 border-t border-slate-800 mt-2">
-          <div>${getSuppliesPill(task.id, task.supplies_on_hand || 'N')}</div>
-          <div class="flex items-center gap-1 text-slate-400">
-            <select onchange="quickMoveTask('${task.id}', this.value)" title="Move Status" class="bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-[10px] text-slate-300">
-              <option value="" disabled selected>Move ▾</option>
-              <option value="Backlog">Backlog</option>
-              <option value="Not Started">Not Started</option>
-              <option value="In progress">In Progress</option>
-              <option value="Done">Done</option>
-            </select>
-            <button onclick="openTaskModal('${task.id}')" title="Edit" class="p-1 hover:text-white rounded"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
-          </div>
-        </div>
+        <h4 class="text-sm font-bold leading-snug mb-1">${escapeHtml(task.summary || task.raw_note)}</h4>
+        ${task.raw_note && task.raw_note !== task.summary ? `<p class="text-xs muted mb-2">${escapeHtml(task.raw_note)}</p>` : ''}
+        ${task.next_step ? `<div class="rounded-lg p-2.5 my-2 text-sm font-semibold" style="background: var(--bg); border: 2px solid var(--border)">Next: ${escapeHtml(task.next_step)}</div>` : ''}
+        <button type="button" onclick="toggleSupplies('${escapeHtml(task.id)}', event)" class="btn w-full text-sm mb-2 ${ready ? '' : 'btn-accent'}" style="${ready ? 'border-color: var(--accent); color: var(--accent)' : ''}">
+          ${ready ? '✓ Supplies ready' : '⚠ Need supplies — tap when bought'}
+        </button>
+        <div class="grid grid-cols-4 gap-1">${statusBtns}</div>
       `;
       return card;
     }
 
+    function updateMetrics() {
+      const need = tasks.filter(t => t.supplies_on_hand === 'N' && normalizeStatus(t.status) !== 'Done').length;
+      document.getElementById('metric-total').textContent = tasks.length;
+      document.getElementById('metric-urgent').textContent = tasks.filter(t => t.priority === 'High' && normalizeStatus(t.status) !== 'Done').length;
+      document.getElementById('metric-inprogress').textContent = tasks.filter(t => normalizeStatus(t.status) === 'In progress').length;
+      document.getElementById('metric-supplies-needed').textContent = need;
+      document.getElementById('metric-done').textContent = tasks.filter(t => normalizeStatus(t.status) === 'Done').length;
+      document.getElementById('townrun-badge').textContent = need;
+      document.getElementById('filter-active-indicator').classList.toggle('hidden', currentFilter === 'all');
+      updateNetworkStatus();
+    }
+
+    function setFilter(filterType) { currentFilter = filterType; renderBoard(); }
+
+    function setMobileTab(tab) {
+      activeMobileTab = tab;
+      const tabs = { 'Backlog': 'tab-Backlog', 'Not Started': 'tab-NotStarted', 'In progress': 'tab-Inprogress', 'Done': 'tab-Done' };
+      Object.entries(tabs).forEach(([k, btnId]) => {
+        document.getElementById(btnId).className = 'chip' + (k === tab ? ' active' : '');
+      });
+      updateMobileVisibility();
+    }
+
+    function updateMobileVisibility() {
+      if (window.innerWidth >= 768) {
+        ['Backlog', 'NotStarted', 'Inprogress', 'Done'].forEach(id => {
+          document.getElementById('col-container-' + id).classList.remove('hidden');
+        });
+      } else {
+        const activeId = activeMobileTab.replace(' ', '');
+        ['Backlog', 'NotStarted', 'Inprogress', 'Done'].forEach(id => {
+          document.getElementById('col-container-' + id).classList.toggle('hidden', id !== activeId);
+        });
+      }
+    }
+    window.addEventListener('resize', updateMobileVisibility);
+
     function initSortable() {
       ['column-Backlog', 'column-NotStarted', 'column-Inprogress', 'column-Done'].forEach(colId => {
         const el = document.getElementById(colId);
-        if (!el) return;
         Sortable.create(el, {
           group: 'farm-kanban',
           animation: 200,
@@ -607,65 +721,61 @@
 
     function updateTaskStatus(taskId, newStatus) {
       const task = tasks.find(t => t.id === taskId);
-      if (!task) return;
+      if (!task || task.status === newStatus) return;
       task.status = newStatus;
-      saveTasksLocally();
+      markDirty(task);
       renderBoard();
-      if (scriptUrl) triggerSingleTaskSync(task, 'update_status');
+      triggerSingleTaskSync(task, 'update_status');
     }
 
-    function quickMoveTask(taskId, newStatus) {
-      if (newStatus) updateTaskStatus(taskId, newStatus);
-    }
+    function quickMoveTask(taskId, newStatus) { updateTaskStatus(taskId, newStatus); }
 
     function toggleSupplies(taskId, event) {
       if (event) event.stopPropagation();
       const task = tasks.find(t => t.id === taskId);
       if (!task) return;
       task.supplies_on_hand = (task.supplies_on_hand === 'Y') ? 'N' : 'Y';
-      saveTasksLocally();
+      markDirty(task);
       renderBoard();
-      if (scriptUrl) triggerSingleTaskSync(task, 'update_supplies');
+      triggerSingleTaskSync(task, 'update_supplies');
     }
 
-    function updateMetrics() {
-      document.getElementById('metric-total').textContent = tasks.length;
-      document.getElementById('metric-urgent').textContent = tasks.filter(t => t.priority === 'High').length;
-      document.getElementById('metric-inprogress').textContent = tasks.filter(t => normalizeStatus(t.status) === 'In progress').length;
-      document.getElementById('metric-supplies-needed').textContent = tasks.filter(t => t.supplies_on_hand === 'N').length;
-      document.getElementById('metric-done').textContent = tasks.filter(t => normalizeStatus(t.status) === 'Done').length;
-      document.getElementById('filter-active-indicator').classList.toggle('hidden', currentFilter === 'all');
+    function openTownRun() {
+      document.getElementById('townrun-view').classList.remove('hidden');
+      renderTownRun();
+      lucide.createIcons();
     }
 
-    function setFilter(filterType) { currentFilter = filterType; renderBoard(); }
-    function clearSearch() { document.getElementById('search-input').value = ''; renderBoard(); }
+    function closeTownRun() {
+      document.getElementById('townrun-view').classList.add('hidden');
+    }
 
-    function setMobileTab(tab) {
-      activeMobileTab = tab;
-      const tabs = { 'Backlog': 'tab-Backlog', 'Not Started': 'tab-NotStarted', 'In progress': 'tab-Inprogress', 'Done': 'tab-Done' };
-      Object.entries(tabs).forEach(([k, btnId]) => {
-        const btn = document.getElementById(btnId);
-        if (!btn) return;
-        btn.className = (k === tab) ? 'mobile-tab-btn py-1.5 px-1 rounded-lg font-medium transition bg-slate-800 text-white shadow' : 'mobile-tab-btn py-1.5 px-1 rounded-lg font-medium transition text-slate-400';
+    function renderTownRun() {
+      const needed = tasks.filter(t => t.supplies_on_hand !== 'Y' && normalizeStatus(t.status) !== 'Done');
+      document.getElementById('townrun-sub').textContent = needed.length
+        ? needed.length + ' item' + (needed.length === 1 ? '' : 's') + ' to pick up / source'
+        : 'Nothing to buy. Nice.';
+      const groups = {};
+      needed.forEach(t => {
+        const key = t.subject || 'Other';
+        (groups[key] = groups[key] || []).push(t);
       });
-      updateMobileVisibility();
-    }
-
-    function updateMobileVisibility() {
-      if (window.innerWidth >= 768) {
-        ['Backlog', 'NotStarted', 'Inprogress', 'Done'].forEach(id => {
-          const el = document.getElementById(`col-container-${id}`);
-          if (el) el.classList.remove('hidden');
-        });
-      } else {
-        const activeId = activeMobileTab.replace(' ', '');
-        ['Backlog', 'NotStarted', 'Inprogress', 'Done'].forEach(id => {
-          const el = document.getElementById(`col-container-${id}`);
-          if (el) el.classList.toggle('hidden', id !== activeId);
-        });
+      const list = document.getElementById('townrun-list');
+      if (!needed.length) {
+        list.innerHTML = '<div class="card rounded-xl p-6 text-center font-bold">Town run is empty.</div>';
+        return;
       }
+      list.innerHTML = Object.keys(groups).sort().map(subject => {
+        const items = groups[subject].map(t => `
+          <div class="card rounded-xl p-3 space-y-2">
+            <div class="font-bold">${escapeHtml(t.summary || t.raw_note)}</div>
+            ${t.next_step ? `<div class="text-sm">Buy / do: ${escapeHtml(t.next_step)}</div>` : ''}
+            <button class="btn btn-accent w-full text-sm" onclick="toggleSupplies('${escapeHtml(t.id)}')">Mark supplies ready</button>
+          </div>
+        `).join('');
+        return `<section><h3 class="text-sm font-black uppercase tracking-wide mb-2">${escapeHtml(subject)} (${groups[subject].length})</h3><div class="space-y-2">${items}</div></section>`;
+      }).join('');
     }
-    window.addEventListener('resize', updateMobileVisibility);
 
     function openTaskModal(taskId = null) {
       const modal = document.getElementById('task-modal');
@@ -679,11 +789,12 @@
         document.getElementById('form-next-step').value = task.next_step || '';
         document.getElementById('form-status').value = normalizeStatus(task.status);
         document.getElementById('form-priority').value = task.priority || 'Medium';
-        document.getElementById('form-subject').value = task.subject || 'Garden';
+        document.getElementById('form-subject').value = SUBJECTS.includes(task.subject) ? task.subject : 'Garden';
         document.getElementById('form-category').value = task.category || 'Improvement';
         document.getElementById('form-effort').value = task.effort || '1-2 hours';
         document.getElementById('form-supplies').value = task.supplies_on_hand || 'N';
         deleteBtn.classList.remove('hidden');
+        document.getElementById('modal-title').textContent = 'Edit Task';
       } else {
         document.getElementById('form-task-id').value = '';
         document.getElementById('form-summary').value = '';
@@ -696,6 +807,7 @@
         document.getElementById('form-effort').value = '1-2 hours';
         document.getElementById('form-supplies').value = 'N';
         deleteBtn.classList.add('hidden');
+        document.getElementById('modal-title').textContent = 'New Task';
       }
       modal.classList.remove('hidden');
       modal.classList.add('flex');
@@ -711,35 +823,37 @@
     function saveTaskForm(e) {
       e.preventDefault();
       const id = document.getElementById('form-task-id').value;
-      const summary = document.getElementById('form-summary').value.trim();
-      const raw_note = document.getElementById('form-raw-note').value.trim() || summary;
-      const next_step = document.getElementById('form-next-step').value.trim();
-      const status = document.getElementById('form-status').value;
-      const priority = document.getElementById('form-priority').value;
-      const subject = document.getElementById('form-subject').value;
-      const category = document.getElementById('form-category').value;
-      const effort = document.getElementById('form-effort').value;
-      const supplies_on_hand = document.getElementById('form-supplies').value;
-
+      const payload = {
+        summary: document.getElementById('form-summary').value.trim(),
+        raw_note: document.getElementById('form-raw-note').value.trim() || document.getElementById('form-summary').value.trim(),
+        next_step: document.getElementById('form-next-step').value.trim(),
+        status: document.getElementById('form-status').value,
+        priority: document.getElementById('form-priority').value,
+        subject: document.getElementById('form-subject').value,
+        category: document.getElementById('form-category').value,
+        effort: document.getElementById('form-effort').value,
+        supplies_on_hand: document.getElementById('form-supplies').value
+      };
+      payload.scope = (payload.effort === 'Multi-day' || payload.effort === 'Half day') ? 'Large Project' : 'Small Task';
+      payload.complexity = payload.priority === 'High' ? 'High' : 'Medium';
       if (id) {
         const task = tasks.find(t => t.id === id);
         if (task) {
-          Object.assign(task, { summary, raw_note, next_step, status, priority, subject, category, effort, supplies_on_hand });
-          if (scriptUrl) triggerSingleTaskSync(task, 'update_task');
+          Object.assign(task, payload);
+          markDirty(task);
+          triggerSingleTaskSync(task, 'update_task');
         }
       } else {
-        const newTask = {
-          id: 'task_' + Date.now(),
+        const newTask = migrateTask({
+          id: newTaskId(),
           timestamp: new Date().toISOString().split('T')[0],
-          raw_note, summary,
-          scope: effort === 'Multi-day' || effort === 'Half day' ? 'Large Project' : 'Small Task',
-          category, subject, complexity: priority === 'High' ? 'High' : 'Medium',
-          effort, priority, status, next_step, supplies_on_hand
-        };
+          ...payload
+        });
+        newTask.dirty = true;
         tasks.unshift(newTask);
-        if (scriptUrl) triggerSingleTaskSync(newTask, 'add_task');
+        saveTasksLocally();
+        triggerSingleTaskSync(newTask, 'add_task');
       }
-      saveTasksLocally();
       closeTaskModal();
       renderBoard();
     }
@@ -747,12 +861,13 @@
     function deleteCurrentTask() {
       const id = document.getElementById('form-task-id').value;
       if (!id) return;
-      if (confirm('Delete this task?')) {
-        tasks = tasks.filter(t => t.id !== id);
-        saveTasksLocally();
-        closeTaskModal();
-        renderBoard();
-      }
+      if (!confirm('Delete this task?')) return;
+      const task = tasks.find(t => t.id === id);
+      tasks = tasks.filter(t => t.id !== id);
+      saveTasksLocally();
+      closeTaskModal();
+      renderBoard();
+      if (task && scriptUrl) postToSheet({ action: 'delete_task', task }).catch(() => {});
     }
 
     function openSettingsModal() {
@@ -770,94 +885,176 @@
     }
 
     function saveSettings() {
-      scriptUrl = document.getElementById('settings-script-url').value.trim();
+      scriptUrl = document.getElementById('settings-script-url').value.trim() || DEFAULT_SCRIPT_URL;
       localStorage.setItem('farm_braindump_script_url', scriptUrl);
       closeSettingsModal();
       updateNetworkStatus();
       if (scriptUrl) syncWithGoogleSheet();
     }
 
+    async function copyAppsScript() {
+      try {
+        const res = await fetch('./apps-script.js');
+        const text = await res.text();
+        await navigator.clipboard.writeText(text);
+        alert('Apps Script copied. Paste it into Extensions → Apps Script, then Deploy a new version.');
+      } catch (e) {
+        window.open('./apps-script.js', '_blank');
+      }
+    }
+
     function exportDataJson() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks, null, 2));
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(tasks, null, 2));
       const a = document.createElement('a');
       a.href = dataStr;
-      a.download = `farm_braindump_${new Date().toISOString().split('T')[0]}.json`;
+      a.download = 'farm_braindump_' + new Date().toISOString().split('T')[0] + '.json';
       document.body.appendChild(a);
       a.click();
       a.remove();
     }
 
     function resetToDefaultTasks() {
-      if (confirm('Reset all tasks to default Brain Dump v.0 items?')) {
-        tasks = [...DEFAULT_TASKS];
-        saveTasksLocally();
-        closeSettingsModal();
-        renderBoard();
-      }
+      if (!confirm('Reset all tasks to default Brain Dump v.0 items?')) return;
+      tasks = DEFAULT_TASKS.map(t => migrateTask({ ...t, dirty: true }));
+      saveTasksLocally();
+      closeSettingsModal();
+      renderBoard();
+    }
+
+    function mergeTasks(local, remote) {
+      const localById = new Map();
+      const localByFp = new Map();
+      local.forEach(t => {
+        localById.set(t.id, t);
+        localByFp.set(fingerprint(t), t);
+      });
+      const used = new Set();
+      const merged = [];
+      remote.forEach(rt => {
+        rt = migrateTask(rt);
+        let lt = localById.get(rt.id) || localByFp.get(fingerprint(rt));
+        if (lt) used.add(lt.id);
+        if (lt && lt.dirty && (Number(lt.updated_at) || 0) >= (Number(rt.updated_at) || 0)) {
+          merged.push(lt);
+        } else if (lt && lt.dirty) {
+          merged.push(Object.assign(migrateTask(rt), { dirty: true }));
+        } else {
+          merged.push(Object.assign(rt, { dirty: false }));
+        }
+      });
+      local.forEach(t => {
+        if (!used.has(t.id)) merged.push(t);
+      });
+      return merged;
+    }
+
+    async function postToSheet(payload) {
+      if (!scriptUrl) throw new Error('No script URL');
+      const res = await fetch(scriptUrl, {
+        method: 'POST',
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Sheet HTTP ' + res.status);
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); }
+      catch (e) { throw new Error('Sheet returned a non-JSON response'); }
+      if (data && data.error) throw new Error(data.error);
+      return data;
+    }
+
+    async function getFromSheet() {
+      const res = await fetch(scriptUrl + '?action=get_all&t=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) throw new Error('Sheet HTTP ' + res.status);
+      const data = await res.json();
+      if (data && data.error) throw new Error(data.error);
+      if (!Array.isArray(data)) throw new Error('Sheet did not return a task list');
+      return data;
     }
 
     async function triggerSingleTaskSync(task, action) {
-      if (!scriptUrl) return;
-      const statusText = document.getElementById('sync-status-text');
-      statusText.textContent = 'Syncing...';
+      if (!scriptUrl || !navigator.onLine) {
+        setSyncMessage('Saved on this phone (will sync later)', null);
+        return;
+      }
+      setSyncMessage('Syncing…', null);
       try {
-        await fetch(scriptUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action, task })
-        });
-        statusText.textContent = 'Synced with Sheet';
-        statusText.className = 'text-[11px] font-medium text-emerald-400';
+        const result = await postToSheet({ action, task });
+        if (result && result.task && result.task.id) task.id = result.task.id;
+        task.dirty = false;
+        saveTasksLocally();
+        setSyncMessage('Saved to Google Sheet', true);
+        updateNetworkStatus();
       } catch (err) {
-        statusText.textContent = 'Cached Locally (Offline)';
-        statusText.className = 'text-[11px] font-medium text-amber-400';
+        setSyncMessage('Could not reach sheet — saved on phone', false);
       }
     }
 
-    async function syncWithGoogleSheet() {
-      if (!scriptUrl) { openSettingsModal(); return; }
-      const syncIcon = document.getElementById('sync-icon');
-      const statusText = document.getElementById('sync-status-text');
-      syncIcon.classList.add('animate-spin');
-      statusText.textContent = 'Pulling from Sheet...';
+    async function flushDirtyTasks() {
+      const dirty = tasks.filter(t => t.dirty);
+      if (!dirty.length || !scriptUrl || !navigator.onLine) return;
       try {
-        const response = await fetch(scriptUrl + '?action=get_all');
-        const data = await response.json();
-        if (Array.isArray(data) && data.length > 0) {
-          tasks = data;
-          saveTasksLocally();
-          renderBoard();
-          statusText.textContent = 'Synced with Sheet';
-          statusText.className = 'text-[11px] font-medium text-emerald-400';
-        }
+        await postToSheet({ action: 'sync_all', tasks: dirty });
+        dirty.forEach(t => { t.dirty = false; });
+        saveTasksLocally();
+        setSyncMessage('Caught up with Google Sheet', true);
+        updateNetworkStatus();
       } catch (e) {
-        statusText.textContent = 'Sync Failed (Using Cache)';
-        statusText.className = 'text-[11px] font-medium text-rose-400';
+        setSyncMessage('Sheet still unreachable — phone copy is kept', false);
+      }
+    }
+
+    async function syncWithGoogleSheet(opts = {}) {
+      if (!scriptUrl) { openSettingsModal(); return; }
+      if (syncing) return;
+      syncing = true;
+      const syncIcon = document.getElementById('sync-icon');
+      syncIcon.classList.add('animate-spin');
+      if (!opts.quiet) setSyncMessage('Merging with Google Sheet…', null);
+      try {
+        const remote = await getFromSheet();
+        tasks = mergeTasks(tasks, remote);
+        saveTasksLocally();
+        renderBoard();
+        const dirty = tasks.filter(t => t.dirty);
+        if (dirty.length) {
+          await postToSheet({ action: 'sync_all', tasks: dirty });
+          dirty.forEach(t => { t.dirty = false; });
+          saveTasksLocally();
+          setSyncMessage('Merged — kept your phone edits and updated the sheet', true);
+        } else {
+          setSyncMessage('Merged with Google Sheet', true);
+        }
+        updateNetworkStatus();
+      } catch (e) {
+        setSyncMessage('Sync failed — using the phone copy', false);
       } finally {
         syncIcon.classList.remove('animate-spin');
+        syncing = false;
       }
     }
 
-    async function pullFromGoogleSheet() { await syncWithGoogleSheet(); closeSettingsModal(); }
+    async function pullFromGoogleSheet() {
+      await syncWithGoogleSheet();
+      closeSettingsModal();
+    }
 
     async function pushToGoogleSheet() {
-      if (!scriptUrl) { alert('Please enter your Google Apps Script URL first.'); return; }
-      const statusText = document.getElementById('sync-status-text');
-      statusText.textContent = 'Pushing to Sheet...';
+      if (!scriptUrl) { alert('No Google Apps Script URL set.'); return; }
+      const dirty = tasks.filter(t => t.dirty);
+      const payload = dirty.length ? dirty : tasks;
+      setSyncMessage('Pushing to sheet…', null);
       try {
-        await fetch(scriptUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'sync_all', tasks })
-        });
-        alert('Pushed active board state to Google Sheet successfully!');
-        statusText.textContent = 'Synced with Sheet';
-        statusText.className = 'text-[11px] font-medium text-emerald-400';
+        await postToSheet({ action: 'sync_all', tasks: payload });
+        payload.forEach(t => { t.dirty = false; });
+        saveTasksLocally();
+        setSyncMessage('Pushed to Google Sheet', true);
         closeSettingsModal();
       } catch (e) {
-        alert('Error pushing to sheet. Ensure your Apps Script URL is deployed with access set to Anyone.');
+        alert('Could not push to the sheet. If you just updated Apps Script, deploy a new version with access set to Anyone.\n\n' + e.message);
+        setSyncMessage('Push failed — phone copy kept', false);
       }
     }
   </script>

@@ -1,0 +1,36 @@
+{
+  "id": "/braindump-kanban/",
+  "name": "Farm Brain Dump",
+  "short_name": "Farm Dump",
+  "description": "Farm task kanban for Brain Dump v.0 — works offline in the shop and field.",
+  "start_url": "/braindump-kanban/index.html",
+  "scope": "/braindump-kanban/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/braindump-kanban/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/braindump-kanban/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/braindump-kanban/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
