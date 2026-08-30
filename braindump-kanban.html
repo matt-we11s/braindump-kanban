@@ -11,18 +11,34 @@
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      max-height: 100dvh;
+      overflow: hidden;
+    }
     .sortable-ghost { opacity: 0.35; transform: scale(0.98); background-color: #334155 !important; border: 2px dashed #38bdf8 !important; }
     .sortable-chosen { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); }
     .sortable-drag { opacity: 0.95; transform: rotate(2deg); }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    .column-scroll { max-height: calc(100vh - 210px); }
-    @media (max-width: 768px) { .column-scroll { max-height: calc(100vh - 270px); } }
+    .kanban-cards-list {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+      scrollbar-gutter: stable;
+      scrollbar-width: thin;
+      scrollbar-color: #475569 transparent;
+    }
+    .kanban-cards-list::-webkit-scrollbar { width: 6px; }
+    .kanban-cards-list::-webkit-scrollbar-track { background: transparent; }
+    .kanban-cards-list::-webkit-scrollbar-thumb { background: #475569; border-radius: 999px; }
+    .task-card { touch-action: pan-y; }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased select-none pb-20 md:pb-6">
+<body class="bg-slate-950 text-slate-100 h-full overflow-hidden flex flex-col font-sans antialiased select-none">
   <!-- Top Navigation Bar -->
-  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-40 px-3 py-2.5 sm:px-6">
+  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 shrink-0 z-40 px-3 py-2.5 sm:px-6">
     <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
       <div class="flex items-center gap-3">
         <div class="bg-emerald-600/20 text-emerald-400 p-2 rounded-xl border border-emerald-500/30">
@@ -65,7 +81,7 @@
   </header>
 
   <!-- Metrics Bar -->
-  <section class="bg-slate-900/60 border-b border-slate-800/80 px-3 py-2 sm:px-6">
+  <section class="bg-slate-900/60 border-b border-slate-800/80 px-3 py-2 sm:px-6 shrink-0">
     <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-0.5">
       <div class="flex items-center gap-2 sm:gap-4 shrink-0">
         <div onclick="setFilter('all')" class="cursor-pointer flex items-center gap-2 bg-slate-800/70 hover:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700/60 transition">
@@ -102,7 +118,7 @@
   </section>
 
   <!-- Filter & Search -->
-  <section class="max-w-7xl mx-auto w-full px-3 py-2 sm:px-6">
+  <section class="max-w-7xl mx-auto w-full px-3 py-2 sm:px-6 shrink-0">
     <div class="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center justify-between">
       <div class="relative flex-1">
         <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
@@ -138,7 +154,7 @@
   </section>
 
   <!-- Mobile Column Switcher -->
-  <div class="md:hidden max-w-7xl mx-auto w-full px-3 mb-2">
+  <div class="md:hidden max-w-7xl mx-auto w-full px-3 mb-2 shrink-0">
     <div class="grid grid-cols-4 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-center text-xs">
       <button onclick="setMobileTab('Backlog')" id="tab-Backlog" class="mobile-tab-btn py-1.5 px-1 rounded-lg font-medium transition text-slate-400">Backlog (<span id="tab-count-Backlog">0</span>)</button>
       <button onclick="setMobileTab('Not Started')" id="tab-NotStarted" class="mobile-tab-btn py-1.5 px-1 rounded-lg font-medium transition bg-slate-800 text-white shadow">Queued (<span id="tab-count-NotStarted">0</span>)</button>
@@ -148,58 +164,59 @@
   </div>
 
   <!-- Board Columns -->
-  <main class="max-w-7xl mx-auto w-full px-3 sm:px-6 flex-1">
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 sm:gap-4 h-full items-start">
+  <main class="max-w-7xl mx-auto w-full px-3 sm:px-6 flex-1 min-h-0 overflow-hidden flex flex-col">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 sm:gap-4 flex-1 min-h-0 h-full items-stretch">
       <!-- Backlog -->
-      <div id="col-container-Backlog" class="kanban-column-wrapper bg-slate-900/80 rounded-2xl border border-slate-800/80 p-3 flex flex-col">
-        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+      <div id="col-container-Backlog" class="kanban-column-wrapper bg-slate-900/80 rounded-2xl border border-slate-800/80 p-3 flex flex-col h-full min-h-0 overflow-hidden">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 shrink-0">
           <div class="flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
             <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Backlog</h2>
           </div>
           <span id="count-Backlog" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">0</span>
         </div>
-        <div id="column-Backlog" data-status="Backlog" class="kanban-cards-list space-y-2.5 min-h-[120px] overflow-y-auto no-scrollbar column-scroll"></div>
+        <div id="column-Backlog" data-status="Backlog" class="kanban-cards-list space-y-2.5 flex-1 min-h-0 overflow-y-auto pb-24 md:pb-3"></div>
       </div>
       <!-- Not Started -->
-      <div id="col-container-NotStarted" class="kanban-column-wrapper bg-slate-900/80 rounded-2xl border border-slate-800/80 p-3 flex flex-col">
-        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+      <div id="col-container-NotStarted" class="kanban-column-wrapper bg-slate-900/80 rounded-2xl border border-slate-800/80 p-3 flex flex-col h-full min-h-0 overflow-hidden">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 shrink-0">
           <div class="flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span>
             <h2 class="text-xs font-bold uppercase tracking-wider text-sky-300">Not Started</h2>
           </div>
           <span id="count-NotStarted" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-sky-400">0</span>
         </div>
-        <div id="column-NotStarted" data-status="Not Started" class="kanban-cards-list space-y-2.5 min-h-[120px] overflow-y-auto no-scrollbar column-scroll"></div>
+        <div id="column-NotStarted" data-status="Not Started" class="kanban-cards-list space-y-2.5 flex-1 min-h-0 overflow-y-auto pb-24 md:pb-3"></div>
       </div>
       <!-- In Progress -->
-      <div id="col-container-Inprogress" class="kanban-column-wrapper bg-slate-900/80 rounded-2xl border border-amber-500/20 p-3 flex flex-col shadow-lg shadow-amber-950/10">
-        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+      <div id="col-container-Inprogress" class="kanban-column-wrapper bg-slate-900/80 rounded-2xl border border-amber-500/20 p-3 flex flex-col h-full min-h-0 overflow-hidden shadow-lg shadow-amber-950/10">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 shrink-0">
           <div class="flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
             <h2 class="text-xs font-bold uppercase tracking-wider text-amber-300">In Progress</h2>
           </div>
           <span id="count-Inprogress" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-950/40 text-amber-400">0</span>
         </div>
-        <div id="column-Inprogress" data-status="In progress" class="kanban-cards-list space-y-2.5 min-h-[120px] overflow-y-auto no-scrollbar column-scroll"></div>
+        <div id="column-Inprogress" data-status="In progress" class="kanban-cards-list space-y-2.5 flex-1 min-h-0 overflow-y-auto pb-24 md:pb-3"></div>
       </div>
       <!-- Done -->
-      <div id="col-container-Done" class="kanban-column-wrapper bg-slate-900/80 rounded-2xl border border-emerald-500/20 p-3 flex flex-col">
-        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+      <div id="col-container-Done" class="kanban-column-wrapper bg-slate-900/80 rounded-2xl border border-emerald-500/20 p-3 flex flex-col h-full min-h-0 overflow-hidden">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 shrink-0">
           <div class="flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
             <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-300">Done</h2>
           </div>
           <span id="count-Done" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-950/40 text-emerald-400">0</span>
         </div>
-        <div id="column-Done" data-status="Done" class="kanban-cards-list space-y-2.5 min-h-[120px] overflow-y-auto no-scrollbar column-scroll"></div>
+        <div id="column-Done" data-status="Done" class="kanban-cards-list space-y-2.5 flex-1 min-h-0 overflow-y-auto pb-24 md:pb-3"></div>
       </div>
     </div>
   </main>
 
   <!-- Mobile FAB -->
   <button onclick="openTaskModal()" title="Add Task"
-    class="sm:hidden fixed right-4 bottom-5 z-40 w-14 h-14 bg-emerald-600 active:bg-emerald-700 text-white rounded-full shadow-2xl flex items-center justify-center border-2 border-emerald-400/40 transition active:scale-95">
+    class="sm:hidden fixed right-4 z-40 w-14 h-14 bg-emerald-600 active:bg-emerald-700 text-white rounded-full shadow-2xl flex items-center justify-center border-2 border-emerald-400/40 transition active:scale-95"
+    style="bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));">
     <i data-lucide="plus" class="w-7 h-7"></i>
   </button>
 
@@ -571,9 +588,14 @@
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
           dragClass: 'sortable-drag',
-          delay: 50,
+          delay: 250,
           delayOnTouchOnly: true,
-          touchStartThreshold: 5,
+          touchStartThreshold: 12,
+          fallbackTolerance: 8,
+          bubbleScroll: true,
+          scroll: true,
+          filter: 'button, select, a, input, textarea',
+          preventOnFilter: false,
           onEnd: function(evt) {
             const taskId = evt.item.getAttribute('data-id');
             const targetStatus = evt.to.getAttribute('data-status');
