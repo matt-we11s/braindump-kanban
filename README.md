@@ -12,7 +12,9 @@ The old “Add to Home screen” shortcut is a Chrome bookmark. That is why the 
 3. Tap the green **Install** banner, or Chrome **⋮ → Install app**.
 4. Open the new **Farm Dump** icon. It should run fullscreen like its own app.
 
-## Update the Google Apps Script (one-time)
+## If sync says "Range not found"
+
+The first script version tried to write Task ID into columns the dashboard tab does not have. Paste the current `apps-script.js` and deploy a **new version**. It now finds the actual data tab and adds columns M/N only there.
 
 This version writes a stable **Task ID** column so two tasks with similar names cannot overwrite each other, and it can actually confirm a save.
 

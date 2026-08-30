@@ -1,4 +1,4 @@
-const CACHE = 'farm-kanban-v3';
+const CACHE = 'farm-kanban-v4';
 const PRECACHE = [
   './',
   './index.html',

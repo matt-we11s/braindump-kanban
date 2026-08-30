@@ -371,10 +371,11 @@
           <button onclick="pushToGoogleSheet()" class="btn text-sm">Push dirty tasks</button>
         </div>
         <div class="panel rounded-xl p-3 text-[12px] leading-relaxed">
-          <p class="font-bold mb-1">Update the sheet script (needed for trustworthy IDs)</p>
-          <p class="muted mb-2">Sheet → Extensions → Apps Script → replace code with <code>apps-script.js</code> from the GitHub repo → Deploy → Manage deployments → pencil → New version.</p>
+          <p class="font-bold mb-1">Update the sheet script</p>
+          <p class="muted mb-2">Sheet → Extensions → Apps Script → replace ALL code → Save → Deploy → Manage deployments → pencil → <strong>New version</strong> → Deploy. Access must be <strong>Anyone</strong>.</p>
           <button type="button" onclick="copyAppsScript()" class="btn w-full text-sm">Copy Apps Script to clipboard</button>
         </div>
+        <p id="settings-last-error" class="text-xs font-semibold" style="color: var(--urgent)"></p>
         <div class="flex items-center justify-between pt-1">
           <button onclick="exportDataJson()" class="text-sm font-bold" style="color: var(--sky)">Export JSON</button>
           <button onclick="resetToDefaultTasks()" class="text-sm font-bold" style="color: var(--urgent)">Reset to Default</button>
@@ -560,6 +561,8 @@
       const el = document.getElementById('sync-status-text');
       el.textContent = text;
       el.style.color = ok === false ? 'var(--urgent)' : ok === true ? 'var(--accent)' : 'var(--muted)';
+      const errEl = document.getElementById('settings-last-error');
+      if (errEl) errEl.textContent = ok === false ? text : '';
     }
 
     function normalizeStatus(status) {
@@ -894,10 +897,10 @@
 
     async function copyAppsScript() {
       try {
-        const res = await fetch('./apps-script.js');
+        const res = await fetch('./apps-script.js?t=' + Date.now(), { cache: 'no-store' });
         const text = await res.text();
         await navigator.clipboard.writeText(text);
-        alert('Apps Script copied. Paste it into Extensions → Apps Script, then Deploy a new version.');
+        alert('New Apps Script copied.\n\n1. Brain Dump sheet → Extensions → Apps Script\n2. Select all old code, paste this over it, Save\n3. Deploy → Manage deployments → pencil → New version → Deploy\n4. Access: Anyone\n5. Come back here and tap Sync.');
       } catch (e) {
         window.open('./apps-script.js', '_blank');
       }
@@ -948,30 +951,65 @@
       return merged;
     }
 
-    async function postToSheet(payload) {
-      if (!scriptUrl) throw new Error('No script URL');
-      const res = await fetch(scriptUrl, {
-        method: 'POST',
-        redirect: 'follow',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
+    function jsonpRequest(url) {
+      return new Promise((resolve, reject) => {
+        const cb = 'gas_cb_' + Date.now() + '_' + Math.floor(Math.random() * 1e6);
+        const script = document.createElement('script');
+        const timer = setTimeout(() => {
+          cleanup();
+          reject(new Error('Sheet timed out'));
+        }, 25000);
+        function cleanup() {
+          clearTimeout(timer);
+          delete window[cb];
+          script.remove();
+        }
+        window[cb] = (data) => { cleanup(); resolve(data); };
+        script.onerror = () => { cleanup(); reject(new Error('Could not load sheet script')); };
+        script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;
+        document.body.appendChild(script);
       });
-      if (!res.ok) throw new Error('Sheet HTTP ' + res.status);
-      const text = await res.text();
-      let data;
-      try { data = JSON.parse(text); }
-      catch (e) { throw new Error('Sheet returned a non-JSON response'); }
+    }
+
+    function unwrapSheet(data, expectArray) {
       if (data && data.error) throw new Error(data.error);
+      if (expectArray && !Array.isArray(data)) throw new Error('Sheet did not return a task list');
       return data;
     }
 
+    async function postToSheet(payload) {
+      if (!scriptUrl) throw new Error('No script URL');
+      try {
+        const res = await fetch(scriptUrl, {
+          method: 'POST',
+          redirect: 'follow',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('Sheet HTTP ' + res.status);
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); }
+        catch (e) { throw new Error('Sheet returned a non-JSON response'); }
+        return unwrapSheet(data);
+      } catch (err) {
+        const encoded = encodeURIComponent(JSON.stringify(payload));
+        if (encoded.length > 1800) throw err;
+        const data = await jsonpRequest(scriptUrl + '?payload=' + encoded);
+        return unwrapSheet(data);
+      }
+    }
+
     async function getFromSheet() {
-      const res = await fetch(scriptUrl + '?action=get_all&t=' + Date.now(), { cache: 'no-store' });
-      if (!res.ok) throw new Error('Sheet HTTP ' + res.status);
-      const data = await res.json();
-      if (data && data.error) throw new Error(data.error);
-      if (!Array.isArray(data)) throw new Error('Sheet did not return a task list');
-      return data;
+      try {
+        const res = await fetch(scriptUrl + '?action=get_all&t=' + Date.now(), { cache: 'no-store', redirect: 'follow' });
+        if (!res.ok) throw new Error('Sheet HTTP ' + res.status);
+        const data = await res.json();
+        return unwrapSheet(data, true);
+      } catch (err) {
+        const data = await jsonpRequest(scriptUrl + '?action=get_all&t=' + Date.now());
+        return unwrapSheet(data, true);
+      }
     }
 
     async function triggerSingleTaskSync(task, action) {
@@ -988,7 +1026,7 @@
         setSyncMessage('Saved to Google Sheet', true);
         updateNetworkStatus();
       } catch (err) {
-        setSyncMessage('Could not reach sheet — saved on phone', false);
+        setSyncMessage('Sheet save failed: ' + (err && err.message ? err.message : err), false);
       }
     }
 
@@ -1002,7 +1040,7 @@
         setSyncMessage('Caught up with Google Sheet', true);
         updateNetworkStatus();
       } catch (e) {
-        setSyncMessage('Sheet still unreachable — phone copy is kept', false);
+        setSyncMessage('Sheet catch-up failed: ' + (e && e.message ? e.message : e), false);
       }
     }
 
@@ -1029,7 +1067,7 @@
         }
         updateNetworkStatus();
       } catch (e) {
-        setSyncMessage('Sync failed — using the phone copy', false);
+        setSyncMessage('Sync failed: ' + (e && e.message ? e.message : e), false);
       } finally {
         syncIcon.classList.remove('animate-spin');
         syncing = false;
