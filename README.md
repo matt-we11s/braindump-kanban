@@ -10,7 +10,7 @@ The old “Add to Home screen” shortcut is a Chrome bookmark. That is why the 
 1. Delete the old home-screen icon.
 2. Open https://matt-we11s.github.io/braindump-kanban/ in **Chrome**.
 3. Tap the green **Install** banner, or Chrome **⋮ → Install app**.
-4. Open the new **Farm Dump** icon. It should run fullscreen like its own app.
+4. Open the new **Farm Kanban** icon. It should run fullscreen like its own app.
 
 ## If sync says "Range not found"
 

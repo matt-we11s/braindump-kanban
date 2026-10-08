@@ -1,7 +1,7 @@
 {
   "id": "/braindump-kanban/",
   "name": "Farm Brain Dump",
-  "short_name": "Farm Dump",
+  "short_name": "Farm Kanban",
   "description": "Farm task kanban for Brain Dump v.0 — works offline in the shop and field.",
   "start_url": "/braindump-kanban/index.html",
   "scope": "/braindump-kanban/",
