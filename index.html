@@ -7,8 +7,8 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Farm Dump">
-  <meta name="application-name" content="Farm Dump">
+  <meta name="apple-mobile-web-app-title" content="Farm Kanban">
+  <meta name="application-name" content="Farm Kanban">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -186,12 +186,7 @@
       </div>
       <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
         <select id="filter-subject" onchange="renderBoard()" class="input w-auto"></select>
-        <select id="filter-priority" onchange="renderBoard()" class="input w-auto">
-          <option value="all">All Priorities</option>
-          <option value="High">High</option>
-          <option value="Medium">Medium</option>
-          <option value="Low">Low</option>
-        </select>
+        <select id="filter-priority" onchange="renderBoard()" class="input w-auto"></select>
         <select id="filter-supplies" onchange="renderBoard()" class="input w-auto">
           <option value="all">All Supplies</option>
           <option value="Y">Ready</option>
@@ -202,16 +197,17 @@
   </section>
 
   <div class="md:hidden max-w-7xl mx-auto w-full px-3 mb-2 shrink-0">
-    <div class="grid grid-cols-4 gap-1 p-1 rounded-xl panel text-center text-xs">
+    <div class="grid grid-cols-5 gap-1 p-1 rounded-xl panel text-center text-[10px] sm:text-xs">
       <button onclick="setMobileTab('Backlog')" id="tab-Backlog" class="chip">Backlog (<span id="tab-count-Backlog">0</span>)</button>
       <button onclick="setMobileTab('Not Started')" id="tab-NotStarted" class="chip active">Queued (<span id="tab-count-NotStarted">0</span>)</button>
       <button onclick="setMobileTab('In progress')" id="tab-Inprogress" class="chip">Active (<span id="tab-count-Inprogress">0</span>)</button>
+      <button onclick="setMobileTab('On Hold')" id="tab-OnHold" class="chip">Hold (<span id="tab-count-OnHold">0</span>)</button>
       <button onclick="setMobileTab('Done')" id="tab-Done" class="chip">Done (<span id="tab-count-Done">0</span>)</button>
     </div>
   </div>
 
   <main class="max-w-7xl mx-auto w-full px-3 sm:px-6 flex-1 min-h-0 overflow-hidden flex flex-col">
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 sm:gap-4 flex-1 min-h-0 h-full items-stretch">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 sm:gap-4 flex-1 min-h-0 h-full items-stretch">
       <div id="col-container-Backlog" class="panel rounded-2xl p-3 flex flex-col h-full min-h-0 overflow-hidden">
         <div class="flex items-center justify-between pb-2 mb-2 border-b-2 shrink-0" style="border-color: var(--border)">
           <h2 class="text-xs font-bold uppercase tracking-wider">Backlog</h2>
@@ -232,6 +228,13 @@
           <span id="count-Inprogress" class="text-xs font-bold px-2 py-0.5 rounded-full border-2" style="border-color: var(--border)">0</span>
         </div>
         <div id="column-Inprogress" data-status="In progress" class="kanban-cards-list space-y-3 flex-1 min-h-0 overflow-y-auto pb-24 md:pb-3"></div>
+      </div>
+      <div id="col-container-OnHold" class="panel rounded-2xl p-3 flex flex-col h-full min-h-0 overflow-hidden">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b-2 shrink-0" style="border-color: var(--border)">
+          <h2 class="text-xs font-bold uppercase tracking-wider" style="color: var(--muted)">On Hold</h2>
+          <span id="count-OnHold" class="text-xs font-bold px-2 py-0.5 rounded-full border-2" style="border-color: var(--border)">0</span>
+        </div>
+        <div id="column-OnHold" data-status="On Hold" class="kanban-cards-list space-y-3 flex-1 min-h-0 overflow-y-auto pb-24 md:pb-3"></div>
       </div>
       <div id="col-container-Done" class="panel rounded-2xl p-3 flex flex-col h-full min-h-0 overflow-hidden">
         <div class="flex items-center justify-between pb-2 mb-2 border-b-2 shrink-0" style="border-color: var(--border)">
@@ -283,20 +286,11 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-[11px] font-bold uppercase mb-1">Status</label>
-            <select id="form-status" class="input">
-              <option value="Not Started">Not Started</option>
-              <option value="In progress">In Progress</option>
-              <option value="Backlog">Backlog</option>
-              <option value="Done">Done</option>
-            </select>
+            <select id="form-status" class="input"></select>
           </div>
           <div>
             <label class="block text-[11px] font-bold uppercase mb-1">Priority</label>
-            <select id="form-priority" class="input">
-              <option value="High">High (Urgent)</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
-            </select>
+            <select id="form-priority" class="input"></select>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
@@ -387,13 +381,21 @@
 
   <script>
     const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyu4Xy4_59zuNaE6wT0SFAh9jNeL4atJxsFIMbLTf_qhLgbNbC_-aP6nrzp4OGF9Kfc/exec';
-    const SUBJECTS = ['Garden', 'Greenhouse', 'House Exterior', 'House Interior', 'Yard', 'Off-Property'];
-    const STATUSES = [
-      { value: 'Backlog', label: 'Backlog' },
-      { value: 'Not Started', label: 'Queue' },
-      { value: 'In progress', label: 'Active' },
-      { value: 'Done', label: 'Done' }
-    ];
+    // Seeds match Brain Dump v.0 Tasks sheet data-validation lists (F / J / I).
+    const SUBJECT_SEED = ['Garden', 'Greenhouse', 'House Exterior', 'House Interior', 'Yard', 'Off-Property', 'Vehicle', 'Outbuilding'];
+    const STATUS_SEED = ['Not Started', 'Backlog', 'In progress', 'Done', 'On Hold'];
+    const PRIORITY_SEED = ['Highest', 'High', 'Medium', 'Low', 'Lowest'];
+    const PRIORITY_RANK = { Highest: 0, High: 1, Medium: 2, Low: 3, Lowest: 4 };
+    const STATUS_QUICK_LABELS = {
+      'Backlog': 'Backlog',
+      'Not Started': 'Queue',
+      'In progress': 'Active',
+      'On Hold': 'Hold',
+      'Done': 'Done'
+    };
+    let SUBJECTS = SUBJECT_SEED.slice();
+    let STATUSES = STATUS_SEED.map(value => ({ value, label: STATUS_QUICK_LABELS[value] || value }));
+    let PRIORITIES = PRIORITY_SEED.slice();
     const DEFAULT_TASKS = [
       {"id": "task_1", "timestamp": "2026-08-02", "raw_note": "Drive t-posts into ground for garden gate posts", "summary": "Drive garden gate t-posts", "scope": "Small Task", "category": "Improvement", "subject": "Garden", "complexity": "Medium", "effort": "1-2 hours", "priority": "Medium", "status": "Done", "next_step": "Gather tools and materials", "supplies_on_hand": "Y"},
       {"id": "task_2", "timestamp": "2026-08-02", "raw_note": "Trench and bury PVC for greenhouse", "summary": "Trench and bury greenhouse PVC", "scope": "Large Project", "category": "Improvement", "subject": "Greenhouse", "complexity": "High", "effort": "Half day", "priority": "Medium", "status": "In progress", "next_step": "repair irrigation to continue", "supplies_on_hand": "Y"},
@@ -422,8 +424,8 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       applyTheme(localStorage.getItem('farm_braindump_theme') || 'dark');
-      fillSubjectSelects();
       loadTasks();
+      refreshDynamicSelects();
       initSortable();
       renderBoard();
       setupPwa();
@@ -436,10 +438,92 @@
       }
     });
 
-    function fillSubjectSelects() {
-      const opts = ['<option value="all">All Subjects</option>'].concat(SUBJECTS.map(s => `<option value="${s}">${s}</option>`)).join('');
-      document.getElementById('filter-subject').innerHTML = opts;
-      document.getElementById('form-subject').innerHTML = SUBJECTS.map(s => `<option value="${s}">${s}</option>`).join('');
+    function unionPreserveOrder(seed, extras) {
+      const out = [];
+      const seen = new Set();
+      seed.concat(extras).forEach(v => {
+        const s = String(v || '').trim();
+        if (!s || seen.has(s)) return;
+        seen.add(s);
+        out.push(s);
+      });
+      return out;
+    }
+
+    function setSelectOptions(el, optionsHtml, preferred) {
+      const prev = preferred != null ? preferred : el.value;
+      el.innerHTML = optionsHtml;
+      if (prev && [...el.options].some(o => o.value === prev)) el.value = prev;
+    }
+
+    function refreshDynamicSelects() {
+      const fromTasksSubject = tasks.map(t => (t.subject || '').trim()).filter(Boolean);
+      SUBJECTS = unionPreserveOrder(SUBJECT_SEED, fromTasksSubject);
+
+      const fromTasksStatus = tasks.map(t => normalizeStatus(t.status)).filter(Boolean);
+      const statusValues = unionPreserveOrder(STATUS_SEED, fromTasksStatus);
+      STATUSES = statusValues.map(value => ({ value, label: STATUS_QUICK_LABELS[value] || value }));
+
+      const fromTasksPriority = tasks.map(t => (t.priority || '').trim()).filter(Boolean);
+      PRIORITIES = unionPreserveOrder(PRIORITY_SEED, fromTasksPriority);
+
+      const filterSubject = document.getElementById('filter-subject');
+      const formSubject = document.getElementById('form-subject');
+      setSelectOptions(
+        filterSubject,
+        ['<option value="all">All Subjects</option>'].concat(SUBJECTS.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`)).join('')
+      );
+      setSelectOptions(
+        formSubject,
+        SUBJECTS.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join(''),
+        formSubject.value || 'Garden'
+      );
+
+      const filterPriority = document.getElementById('filter-priority');
+      const formPriority = document.getElementById('form-priority');
+      const priorityLabels = {
+        Highest: 'Highest',
+        High: 'High (Urgent)',
+        Medium: 'Medium',
+        Low: 'Low',
+        Lowest: 'Lowest'
+      };
+      setSelectOptions(
+        filterPriority,
+        ['<option value="all">All Priorities</option>'].concat(PRIORITIES.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`)).join('')
+      );
+      setSelectOptions(
+        formPriority,
+        PRIORITIES.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(priorityLabels[p] || p)}</option>`).join(''),
+        formPriority.value || 'Medium'
+      );
+
+      const formStatus = document.getElementById('form-status');
+      setSelectOptions(
+        formStatus,
+        statusValues.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join(''),
+        formStatus.value || 'Not Started'
+      );
+    }
+
+    function fillSubjectSelects() { refreshDynamicSelects(); }
+
+    function isUrgentPriority(priority) {
+      return priority === 'Highest' || priority === 'High';
+    }
+
+    function priorityRank(priority) {
+      if (Object.prototype.hasOwnProperty.call(PRIORITY_RANK, priority)) return PRIORITY_RANK[priority];
+      return 50;
+    }
+
+    function priorityBadge(priority) {
+      const p = priority || 'Medium';
+      if (p === 'Highest') return { urgent: true, label: 'HIGHEST', color: 'var(--urgent)' };
+      if (p === 'High') return { urgent: true, label: 'URGENT', color: 'var(--urgent)' };
+      if (p === 'Lowest') return { urgent: false, label: p, color: 'var(--muted)' };
+      if (p === 'Low') return { urgent: false, label: p, color: 'var(--muted)' };
+      return { urgent: false, label: p, color: 'inherit' };
     }
 
     function isStandalone() {
@@ -567,11 +651,16 @@
 
     function normalizeStatus(status) {
       if (!status) return 'Not Started';
-      const s = String(status).trim().toLowerCase();
+      const raw = String(status).trim();
+      const s = raw.toLowerCase();
       if (s === 'in progress' || s === 'inprogress') return 'In progress';
       if (s === 'done' || s === 'completed') return 'Done';
       if (s === 'backlog') return 'Backlog';
-      return 'Not Started';
+      if (s === 'on hold' || s === 'onhold' || s === 'hold') return 'On Hold';
+      if (s === 'not started' || s === 'notstarted' || s === 'queued' || s === 'queue') return 'Not Started';
+      const seedHit = STATUS_SEED.find(v => v.toLowerCase() === s);
+      if (seedHit) return seedHit;
+      return raw;
     }
 
     function renderBoard() {
@@ -579,6 +668,7 @@
         'Backlog': document.getElementById('column-Backlog'),
         'Not Started': document.getElementById('column-NotStarted'),
         'In progress': document.getElementById('column-Inprogress'),
+        'On Hold': document.getElementById('column-OnHold'),
         'Done': document.getElementById('column-Done')
       };
       Object.values(cols).forEach(c => c.innerHTML = '');
@@ -586,7 +676,8 @@
       const subjectVal = document.getElementById('filter-subject').value;
       const priorityVal = document.getElementById('filter-priority').value;
       const suppliesVal = document.getElementById('filter-supplies').value;
-      const counts = { 'Backlog': 0, 'Not Started': 0, 'In progress': 0, 'Done': 0 };
+      const counts = { 'Backlog': 0, 'Not Started': 0, 'In progress': 0, 'On Hold': 0, 'Done': 0 };
+      const bucket = { 'Backlog': [], 'Not Started': [], 'In progress': [], 'On Hold': [], 'Done': [] };
 
       tasks.forEach(task => {
         const normStatus = normalizeStatus(task.status);
@@ -598,22 +689,30 @@
         if (subjectVal !== 'all' && task.subject !== subjectVal) matches = false;
         if (priorityVal !== 'all' && task.priority !== priorityVal) matches = false;
         if (suppliesVal !== 'all' && task.supplies_on_hand !== suppliesVal) matches = false;
-        if (currentFilter === 'urgent' && task.priority !== 'High') matches = false;
+        if (currentFilter === 'urgent' && !isUrgentPriority(task.priority)) matches = false;
         if (currentFilter === 'inprogress' && normStatus !== 'In progress') matches = false;
         if (currentFilter === 'need_supplies' && task.supplies_on_hand !== 'N') matches = false;
         if (currentFilter === 'done' && normStatus !== 'Done') matches = false;
         counts[normStatus] = (counts[normStatus] || 0) + 1;
         if (!matches) return;
-        if (cols[normStatus]) cols[normStatus].appendChild(createCardElement(task));
+        if (bucket[normStatus]) bucket[normStatus].push(task);
+      });
+
+      Object.keys(bucket).forEach(key => {
+        bucket[key]
+          .sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority))
+          .forEach(task => cols[key].appendChild(createCardElement(task)));
       });
 
       document.getElementById('count-Backlog').textContent = counts['Backlog'] || 0;
       document.getElementById('count-NotStarted').textContent = counts['Not Started'] || 0;
       document.getElementById('count-Inprogress').textContent = counts['In progress'] || 0;
+      document.getElementById('count-OnHold').textContent = counts['On Hold'] || 0;
       document.getElementById('count-Done').textContent = counts['Done'] || 0;
       document.getElementById('tab-count-Backlog').textContent = counts['Backlog'] || 0;
       document.getElementById('tab-count-NotStarted').textContent = counts['Not Started'] || 0;
       document.getElementById('tab-count-Inprogress').textContent = counts['In progress'] || 0;
+      document.getElementById('tab-count-OnHold').textContent = counts['On Hold'] || 0;
       document.getElementById('tab-count-Done').textContent = counts['Done'] || 0;
 
       Object.values(cols).forEach(container => {
@@ -630,20 +729,20 @@
 
     function createCardElement(task) {
       const card = document.createElement('div');
-      const isUrgent = task.priority === 'High';
+      const badge = priorityBadge(task.priority);
       const status = normalizeStatus(task.status);
-      card.className = 'task-card card rounded-xl p-3 ' + (isUrgent ? 'urgent-card' : '');
+      card.className = 'task-card card rounded-xl p-3 ' + (badge.urgent ? 'urgent-card' : '');
       card.setAttribute('data-id', task.id);
       const ready = task.supplies_on_hand === 'Y';
       const statusBtns = STATUSES.map(s => {
         const on = s.value === status ? 'on' : '';
-        return `<button type="button" class="status-btn ${on}" onclick="quickMoveTask('${escapeHtml(task.id)}', '${s.value}')">${s.label}</button>`;
+        return `<button type="button" class="status-btn ${on}" onclick="quickMoveTask('${escapeHtml(task.id)}', '${escapeHtml(s.value)}')">${escapeHtml(s.label)}</button>`;
       }).join('');
       card.innerHTML = `
         <div class="flex items-start justify-between gap-2 mb-2">
           <div class="flex flex-wrap gap-1.5 text-[11px] font-bold">
             <span class="px-2 py-1 rounded-lg border-2" style="border-color: var(--border)">${escapeHtml(task.subject || 'Farm')}</span>
-            <span class="px-2 py-1 rounded-lg border-2" style="border-color: ${isUrgent ? 'var(--urgent)' : 'var(--border)'}; color: ${isUrgent ? 'var(--urgent)' : 'inherit'}">${isUrgent ? 'URGENT' : escapeHtml(task.priority || 'Medium')}</span>
+            <span class="px-2 py-1 rounded-lg border-2" style="border-color: ${badge.urgent ? badge.color : 'var(--border)'}; color: ${badge.color}">${escapeHtml(badge.label)}</span>
             <span class="px-2 py-1 rounded-lg border-2 muted" style="border-color: var(--border)">${escapeHtml(task.effort || '')}</span>
           </div>
           <button type="button" onclick="openTaskModal('${escapeHtml(task.id)}')" class="btn px-2 shrink-0" title="Edit"><i data-lucide="edit-2" class="w-5 h-5"></i></button>
@@ -654,7 +753,7 @@
         <button type="button" onclick="toggleSupplies('${escapeHtml(task.id)}', event)" class="btn w-full text-sm mb-2 ${ready ? '' : 'btn-accent'}" style="${ready ? 'border-color: var(--accent); color: var(--accent)' : ''}">
           ${ready ? '✓ Supplies ready' : '⚠ Need supplies — tap when bought'}
         </button>
-        <div class="grid grid-cols-4 gap-1">${statusBtns}</div>
+        <div class="grid grid-cols-5 gap-1">${statusBtns}</div>
       `;
       return card;
     }
@@ -662,7 +761,7 @@
     function updateMetrics() {
       const need = tasks.filter(t => t.supplies_on_hand === 'N' && normalizeStatus(t.status) !== 'Done').length;
       document.getElementById('metric-total').textContent = tasks.length;
-      document.getElementById('metric-urgent').textContent = tasks.filter(t => t.priority === 'High' && normalizeStatus(t.status) !== 'Done').length;
+      document.getElementById('metric-urgent').textContent = tasks.filter(t => isUrgentPriority(t.priority) && normalizeStatus(t.status) !== 'Done').length;
       document.getElementById('metric-inprogress').textContent = tasks.filter(t => normalizeStatus(t.status) === 'In progress').length;
       document.getElementById('metric-supplies-needed').textContent = need;
       document.getElementById('metric-done').textContent = tasks.filter(t => normalizeStatus(t.status) === 'Done').length;
@@ -675,21 +774,26 @@
 
     function setMobileTab(tab) {
       activeMobileTab = tab;
-      const tabs = { 'Backlog': 'tab-Backlog', 'Not Started': 'tab-NotStarted', 'In progress': 'tab-Inprogress', 'Done': 'tab-Done' };
+      const tabs = { 'Backlog': 'tab-Backlog', 'Not Started': 'tab-NotStarted', 'In progress': 'tab-Inprogress', 'On Hold': 'tab-OnHold', 'Done': 'tab-Done' };
       Object.entries(tabs).forEach(([k, btnId]) => {
         document.getElementById(btnId).className = 'chip' + (k === tab ? ' active' : '');
       });
       updateMobileVisibility();
     }
 
+    function columnDomId(status) {
+      return String(status || '').replace(/\s+/g, '');
+    }
+
     function updateMobileVisibility() {
+      const ids = ['Backlog', 'NotStarted', 'Inprogress', 'OnHold', 'Done'];
       if (window.innerWidth >= 768) {
-        ['Backlog', 'NotStarted', 'Inprogress', 'Done'].forEach(id => {
+        ids.forEach(id => {
           document.getElementById('col-container-' + id).classList.remove('hidden');
         });
       } else {
-        const activeId = activeMobileTab.replace(' ', '');
-        ['Backlog', 'NotStarted', 'Inprogress', 'Done'].forEach(id => {
+        const activeId = columnDomId(activeMobileTab);
+        ids.forEach(id => {
           document.getElementById('col-container-' + id).classList.toggle('hidden', id !== activeId);
         });
       }
@@ -697,7 +801,7 @@
     window.addEventListener('resize', updateMobileVisibility);
 
     function initSortable() {
-      ['column-Backlog', 'column-NotStarted', 'column-Inprogress', 'column-Done'].forEach(colId => {
+      ['column-Backlog', 'column-NotStarted', 'column-Inprogress', 'column-OnHold', 'column-Done'].forEach(colId => {
         const el = document.getElementById(colId);
         Sortable.create(el, {
           group: 'farm-kanban',
@@ -790,15 +894,29 @@
         document.getElementById('form-summary').value = task.summary || '';
         document.getElementById('form-raw-note').value = task.raw_note || '';
         document.getElementById('form-next-step').value = task.next_step || '';
-        document.getElementById('form-status').value = normalizeStatus(task.status);
-        document.getElementById('form-priority').value = task.priority || 'Medium';
-        document.getElementById('form-subject').value = SUBJECTS.includes(task.subject) ? task.subject : 'Garden';
+        const statusVal = normalizeStatus(task.status);
+        const priorityVal = (task.priority || '').trim() || 'Medium';
+        const subjectVal = (task.subject || '').trim() || 'Garden';
+        if (subjectVal && !SUBJECTS.includes(subjectVal)) {
+          SUBJECTS = unionPreserveOrder(SUBJECTS, [subjectVal]);
+        }
+        if (statusVal && !STATUSES.some(s => s.value === statusVal)) {
+          STATUSES = STATUSES.concat({ value: statusVal, label: STATUS_QUICK_LABELS[statusVal] || statusVal });
+        }
+        if (priorityVal && !PRIORITIES.includes(priorityVal)) {
+          PRIORITIES = unionPreserveOrder(PRIORITIES, [priorityVal]);
+        }
+        refreshDynamicSelects();
+        document.getElementById('form-status').value = statusVal;
+        document.getElementById('form-priority').value = priorityVal;
+        document.getElementById('form-subject').value = subjectVal;
         document.getElementById('form-category').value = task.category || 'Improvement';
         document.getElementById('form-effort').value = task.effort || '1-2 hours';
         document.getElementById('form-supplies').value = task.supplies_on_hand || 'N';
         deleteBtn.classList.remove('hidden');
         document.getElementById('modal-title').textContent = 'Edit Task';
       } else {
+        refreshDynamicSelects();
         document.getElementById('form-task-id').value = '';
         document.getElementById('form-summary').value = '';
         document.getElementById('form-raw-note').value = '';
@@ -1055,6 +1173,7 @@
         const remote = await getFromSheet();
         tasks = mergeTasks(tasks, remote);
         saveTasksLocally();
+        refreshDynamicSelects();
         renderBoard();
         const dirty = tasks.filter(t => t.dirty);
         if (dirty.length) {
