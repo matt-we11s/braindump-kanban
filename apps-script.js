@@ -7,6 +7,9 @@
  *   Execute as: Me
  *   Who has access: Anyone
  *
+ * GET ?action=options  (read-only) returns the Tasks tab's Status / Priority / Subject
+ * data-validation lists: { status: 'success', options: { status: [], priority: [], subject: [] } }
+ *
  * Adds two columns if missing:
  *   M = Task ID
  *   N = Updated At
@@ -17,6 +20,10 @@ function doGet(e) {
     e = e || { parameter: {} };
     if (e.parameter && e.parameter.debug === '1') {
       return json_(debugInfo_(), e);
+    }
+    if (e.parameter && e.parameter.action === 'options') {
+      // Read-only: no ensureSchema, no ID backfill, no writes.
+      return json_({ status: 'success', options: getOptions_() }, e);
     }
     if (e.parameter && e.parameter.payload) {
       return handleAction_(JSON.parse(e.parameter.payload), e);
@@ -71,6 +78,36 @@ function handleAction_(postData, e) {
   }
 
   return json_({ status: 'ignored', action: action }, e);
+}
+
+function getOptions_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Tasks') || getSheet();
+  var lastCol = Math.max(1, Math.min(sheet.getLastColumn() || 1, sheet.getMaxColumns()));
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function (h) {
+    return String(h || '').trim().toLowerCase();
+  });
+  function listFor(name) {
+    var col = headers.indexOf(name) + 1;
+    if (col < 1 || sheet.getMaxRows() < 2) return [];
+    var dv = sheet.getRange(2, col).getDataValidation();
+    if (!dv) return [];
+    var type = dv.getCriteriaType();
+    var vals = dv.getCriteriaValues() || [];
+    var out = [];
+    if (type === SpreadsheetApp.DataValidationCriteria.VALUE_IN_LIST) {
+      out = vals[0] || [];
+    } else if (type === SpreadsheetApp.DataValidationCriteria.VALUE_IN_RANGE && vals[0]) {
+      out = vals[0].getValues().reduce(function (a, r) { return a.concat(r); }, []);
+    }
+    var seen = {};
+    return out.map(function (v) { return String(v == null ? '' : v).trim(); }).filter(function (v) {
+      if (!v || seen[v]) return false;
+      seen[v] = true;
+      return true;
+    });
+  }
+  return { status: listFor('status'), priority: listFor('priority'), subject: listFor('subject') };
 }
 
 function debugInfo_() {
