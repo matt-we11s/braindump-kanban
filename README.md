@@ -33,3 +33,14 @@ This version writes a stable **Task ID** column so two tasks with similar names 
 - Town Run shopping list
 - Outdoor high-contrast theme (sun icon)
 - Offline cache via a service worker
+
+## Styles build
+
+Tailwind is compiled to a static `tailwind.css` (no Play CDN). After changing classes in `index.html`, rebuild:
+
+```
+npx tailwindcss@3.4.14 -c tailwind.config.js -i src/tailwind.in.css -o tailwind.css --minify
+cp index.html braindump-kanban.html
+```
+
+Lucide (0.454.0) and SortableJS (1.15.2) are vendored in `vendor/` and precached by `sw.js`.
