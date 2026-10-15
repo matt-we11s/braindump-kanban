@@ -1538,6 +1538,15 @@
       try {
         await fetchSheetOptions();
         const remote = await getFromSheet();
+        // Empty successful pull with existing local tasks is treated as a bad/partial
+        // response (wrong tab, auth quirk, etc.) — keep local and warn instead of wiping.
+        if (Array.isArray(remote) && remote.length === 0 && tasks.length > 0) {
+          refreshDynamicSelects();
+          renderBoard();
+          setSyncMessage('Sheet returned no tasks — kept your local list. Check the sheet or try again.', false);
+          updateNetworkStatus();
+          return;
+        }
         tasks = mergeTasks(tasks, remote);
         hasSyncedOnce = true;
         localStorage.setItem(SYNCED_FLAG_KEY, '1');
