@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0b1220" id="meta-theme-color">
+  <meta name="color-scheme" content="dark light">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -13,26 +14,30 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <title>Farm Brain Dump Kanban</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="tailwind.css">
+  <script src="vendor/sortable-1.15.2.min.js"></script>
+  <script src="vendor/lucide-0.454.0.min.js"></script>
   <style>
     :root, [data-theme="dark"] {
+      color-scheme: dark;
       --bg: #0b1220;
       --bg-elev: #111827;
       --bg-card: #020617;
       --text: #f8fafc;
       --muted: #94a3b8;
-      --border: #334155;
-      --accent: #10b981;
+      --border: #64748b;
+      --accent: #10b981;          /* accent as text/border on dark surfaces */
+      --accent-fill: #047857;     /* accent as a fill behind white text (5.5:1) */
       --accent-dim: #064e3b;
-      --accent-text: #ecfdf5;
+      --accent-text: #ffffff;
       --urgent: #fb7185;
       --warn: #fb923c;
+      --warn-text: #1a1408;
       --sky: #38bdf8;
       --shadow: 0 10px 24px rgba(0,0,0,.4);
     }
     [data-theme="sun"] {
+      color-scheme: light;
       --bg: #f3e6c4;
       --bg-elev: #fff6d9;
       --bg-card: #fffdf4;
@@ -40,12 +45,14 @@
       --muted: #3f3424;
       --border: #1a1408;
       --accent: #047857;
+      --accent-fill: #047857;
       --accent-dim: #d1fae5;
       --accent-text: #ffffff;
       --urgent: #9f1239;
       --warn: #9a3412;
+      --warn-text: #ffffff;
       --sky: #075985;
-      --shadow: 0 4px 0 #1a1408;
+      --shadow: 0 2px 6px rgba(26,20,8,.22);
     }
     html, body {
       height: 100%;
@@ -60,6 +67,7 @@
       padding-bottom: env(safe-area-inset-bottom);
     }
     [data-theme="sun"] { font-size: 17px; }
+    :focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
     .chrome { background: var(--bg-elev); border-color: var(--border); color: var(--text); }
     .panel { background: color-mix(in srgb, var(--bg-elev) 92%, transparent); border: 2px solid var(--border); }
     .card {
@@ -80,9 +88,9 @@
       touch-action: manipulation;
     }
     .btn-accent {
-      background: var(--accent);
+      background: var(--accent-fill);
       color: var(--accent-text);
-      border-color: var(--accent);
+      border-color: var(--accent-fill);
     }
     .chip {
       border: 2px solid var(--border);
@@ -95,7 +103,7 @@
       font-size: 12px;
       touch-action: manipulation;
     }
-    .chip.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+    .chip.active, .chip[aria-pressed="true"], .chip[aria-selected="true"] { background: var(--accent-fill); color: var(--accent-text) !important; border-color: var(--accent-fill) !important; }
     .input, select.input, textarea.input {
       background: var(--bg);
       color: var(--text);
@@ -105,6 +113,7 @@
       width: 100%;
       padding: 8px 12px;
     }
+    .field-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
     .sortable-ghost { opacity: 0.35; transform: scale(0.98); border: 2px dashed var(--sky) !important; }
     .sortable-chosen { box-shadow: var(--shadow); }
     .sortable-drag { opacity: 0.95; transform: rotate(2deg); }
@@ -119,170 +128,199 @@
     }
     .task-card { touch-action: pan-y; }
     @media (min-width: 768px) { #board-grid { grid-template-columns: repeat(var(--board-cols, 5), minmax(0, 1fr)); } }
-    .status-btn { min-height: 44px; font-size: 12px; font-weight: 800; border-radius: 10px; border: 2px solid var(--border); color: var(--text); background: var(--bg); touch-action: manipulation; }
-    .status-btn.on { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
-    .urgent-card { border-left-width: 8px; border-left-color: var(--urgent); }
-    .install-banner { background: var(--accent); color: var(--accent-text); }
+    .status-row { display: grid; gap: 4px; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); }
+    .status-row.hidden { display: none; }
+    .input.w-auto { width: auto; }
+    @media (max-width: 639px) { .area-actions .btn { min-width: 44px; min-height: 44px; } }
+    .status-btn { min-height: 44px; font-size: 12px; font-weight: 800; border-radius: 10px; border: 2px solid var(--border); color: var(--text); background: var(--bg); touch-action: manipulation; padding: 0 6px; }
+    .status-btn.on { background: var(--accent-fill); color: var(--accent-text); border-color: var(--accent-fill); }
+    .urgent-card { border-color: var(--urgent); }
+    .supplies-chip { min-height: 44px; padding: 0 12px; border-radius: 10px; border: 2px solid var(--border); font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; background: var(--bg); color: var(--text); touch-action: manipulation; }
+    .supplies-chip.ready { border-color: var(--accent); color: var(--accent); }
+    .supplies-chip.needed { border-color: var(--warn); color: var(--warn); }
+    .move-toggle { min-height: 44px; padding: 0 12px; border-radius: 10px; border: 2px solid var(--border); font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; background: var(--bg); color: var(--text); }
+    .install-banner { background: var(--accent-fill); color: var(--accent-text); }
     body.standalone .browser-only { display: none !important; }
+    .sync-dot { width: 10px; height: 10px; border-radius: 9999px; background: var(--muted); flex-shrink: 0; }
+    .sync-dot[data-state="ok"] { background: var(--accent); }
+    .sync-dot[data-state="busy"] { background: var(--sky); animation: pulse 2s cubic-bezier(.4,0,.6,1) infinite; }
+    .sync-dot[data-state="error"] { background: var(--urgent); }
+    .sync-dot[data-state="offline"], .sync-dot[data-state="pending"] { background: var(--warn); }
+    .sync-banner { background: color-mix(in srgb, var(--urgent) 16%, var(--bg-elev)); border-color: var(--urgent); }
+    .header-grid { display: grid; grid-template-columns: auto minmax(0,1fr) auto; grid-template-areas: "logo brand actions" "status status status"; column-gap: 10px; row-gap: 4px; align-items: center; }
+    @media (min-width: 640px) { .header-grid { grid-template-areas: "logo brand actions" "logo status actions"; row-gap: 0; } }
+    .area-logo { grid-area: logo; } .area-brand { grid-area: brand; } .area-actions { grid-area: actions; } .area-status { grid-area: status; }
+    dialog.modal { padding: 0; margin: auto; border-radius: 1rem; width: calc(100% - 24px); max-width: 32rem; max-height: calc(100dvh - 24px); overflow-y: auto; }
+    dialog.modal::backdrop, dialog.sheet::backdrop { background: rgba(0,0,0,.65); }
+    dialog.sheet { padding: 0; margin: 0; border: 0; width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; background: var(--bg); color: var(--text); padding-top: env(safe-area-inset-top); }
+    dialog.sheet[open] { display: flex; flex-direction: column; }
+    .toast { background: var(--bg-elev); color: var(--text); border: 2px solid var(--border); box-shadow: var(--shadow); }
+    .toast.error { border-color: var(--urgent); }
+    .skeleton { background: color-mix(in srgb, var(--border) 25%, transparent); border-radius: 12px; }
+    details.advanced > summary { cursor: pointer; list-style: none; }
+    details.advanced > summary::-webkit-details-marker { display: none; }
+    kbd { font-size: 11px; border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+      .sortable-drag { transform: none; }
+      .sortable-ghost { transform: none; }
+    }
   </style>
 </head>
 <body class="h-full overflow-hidden flex flex-col font-sans antialiased">
-  <div id="install-banner" class="browser-only chrome install-banner shrink-0 px-3 py-2.5 hidden">
-    <div class="max-w-7xl mx-auto flex items-start gap-3">
-      <div class="flex-1 text-sm font-semibold leading-snug">
-        This is still the browser. Install it as an app to hide the address bar.
-        <span class="block font-medium opacity-90 mt-0.5">Delete any old home-screen icon first — that one is just a Chrome bookmark.</span>
-      </div>
-      <button id="btn-install" class="btn btn-accent px-3 text-sm shrink-0 hidden">Install</button>
-      <button onclick="hideInstallBanner()" class="btn px-3 text-sm shrink-0 bg-transparent border-white/40">OK</button>
+  <div id="install-banner" class="browser-only install-banner shrink-0 px-3 py-2 hidden">
+    <div class="max-w-7xl mx-auto flex items-center gap-3">
+      <p class="flex-1 text-sm font-semibold leading-snug">Install Farm Kanban as an app for a full-screen board that works offline.</p>
+      <button id="btn-install" class="btn px-3 text-sm shrink-0" style="background: var(--accent-text); color: var(--accent-fill); border-color: var(--accent-text)">Install</button>
+      <button onclick="hideInstallBanner()" class="btn px-3 text-sm shrink-0 bg-transparent" style="color: var(--accent-text); border-color: rgba(255,255,255,.6)">Not now</button>
     </div>
   </div>
 
   <header class="chrome border-b-2 shrink-0 z-40 px-3 py-2.5 sm:px-6">
-    <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
-      <div class="flex items-center gap-2.5 min-w-0">
-        <img src="icons/icon-192.png" alt="" class="w-10 h-10 rounded-xl border-2" style="border-color: var(--border)">
-        <div class="min-w-0">
-          <h1 class="text-base sm:text-lg font-bold tracking-tight truncate">Farm Brain Dump <span class="text-xs px-2 py-0.5 rounded-full border-2 font-medium" style="border-color: var(--accent); color: var(--accent)">v.0</span></h1>
-          <div class="flex items-center gap-2 text-xs muted mt-0.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span id="sync-status-text" class="text-[11px] font-semibold">Offline Caching Active</span>
-            <span>•</span>
-            <span id="storage-count-text" class="text-[11px]">16 tasks</span>
-          </div>
-        </div>
+    <div class="max-w-7xl mx-auto header-grid">
+      <img src="icons/icon-192.png" alt="" class="area-logo hidden sm:block w-10 h-10 rounded-xl border-2" style="border-color: var(--border)">
+      <h1 class="area-brand text-base sm:text-lg font-bold tracking-tight truncate min-w-0">
+        <span class="sm:hidden">Farm Kanban</span><span class="hidden sm:inline">Farm Brain Dump</span>
+        <span class="hidden sm:inline text-xs px-2 py-0.5 rounded-full border-2 font-medium align-middle" style="border-color: var(--accent); color: var(--accent)">v.0</span>
+      </h1>
+      <div class="area-status flex items-center gap-2 text-xs muted min-w-0">
+        <span id="sync-dot" class="sync-dot" data-state="busy" aria-hidden="true"></span>
+        <span id="sync-status-text" role="status" aria-live="polite" class="text-xs font-semibold truncate">Loading your tasks…</span>
+        <span class="hidden sm:inline" aria-hidden="true">•</span>
+        <span id="storage-count-text" class="hidden sm:inline text-xs"></span>
       </div>
-      <div class="flex items-center gap-1.5">
-        <button onclick="toggleTheme()" title="Outdoor / dark theme" class="btn px-2" id="btn-theme"><i data-lucide="sun" class="w-5 h-5"></i></button>
-        <button onclick="openTownRun()" title="Town run supplies list" class="btn px-2 relative">
-          <i data-lucide="shopping-cart" class="w-5 h-5"></i>
-          <span id="townrun-badge" class="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full text-[10px] flex items-center justify-center font-black" style="background: var(--warn); color: #fff">0</span>
+      <div class="area-actions flex items-center gap-1.5">
+        <button onclick="toggleTheme()" title="Outdoor / dark theme" aria-label="Switch to outdoor (sun) theme" class="btn px-2" id="btn-theme"><i data-lucide="sun" class="w-5 h-5" aria-hidden="true"></i></button>
+        <button onclick="openTownRun()" title="Town run supplies list" aria-label="Town run supplies list" class="btn px-2 relative" id="btn-townrun">
+          <i data-lucide="shopping-cart" class="w-5 h-5" aria-hidden="true"></i>
+          <span id="townrun-badge" class="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full text-[11px] flex items-center justify-center font-black" style="background: var(--warn); color: var(--warn-text)" aria-hidden="true">0</span>
         </button>
-        <button id="btn-sync-now" onclick="syncWithGoogleSheet()" title="Sync with Google Sheet" class="btn px-2">
-          <i data-lucide="refresh-cw" class="w-5 h-5" id="sync-icon" style="color: var(--accent)"></i>
+        <button id="btn-sync-now" onclick="syncWithGoogleSheet()" title="Sync with Google Sheet" aria-label="Sync with Google Sheet" class="btn px-2">
+          <i data-lucide="refresh-cw" class="w-5 h-5" id="sync-icon" style="color: var(--accent)" aria-hidden="true"></i>
         </button>
-        <button onclick="openSettingsModal()" title="Settings" class="btn px-2"><i data-lucide="settings" class="w-5 h-5"></i></button>
-        <button onclick="openTaskModal()" title="Add New Task" class="hidden sm:flex btn btn-accent px-3 text-sm items-center gap-1">
-          <i data-lucide="plus" class="w-5 h-5"></i> New
+        <button onclick="openSettingsModal()" title="Settings" aria-label="Settings" class="btn px-2"><i data-lucide="settings" class="w-5 h-5" aria-hidden="true"></i></button>
+        <button onclick="openTaskModal()" title="Add new task (N)" class="hidden sm:flex btn btn-accent px-3 text-sm items-center gap-1">
+          <i data-lucide="plus" class="w-5 h-5" aria-hidden="true"></i> New
         </button>
       </div>
     </div>
   </header>
 
-  <section class="chrome border-b-2 px-3 py-2 sm:px-6 shrink-0">
+  <div id="sync-error-banner" class="hidden sync-banner border-b-2 shrink-0 px-3 py-2 sm:px-6" role="alert">
+    <div class="max-w-7xl mx-auto flex items-center gap-3">
+      <i data-lucide="cloud-off" class="w-5 h-5 shrink-0" style="color: var(--urgent)" aria-hidden="true"></i>
+      <p id="sync-error-text" class="flex-1 text-sm font-semibold leading-snug">Couldn't reach the sheet. Your changes are saved on this phone.</p>
+      <button onclick="syncWithGoogleSheet()" class="btn px-3 text-sm shrink-0">Retry</button>
+    </div>
+  </div>
+
+  <section class="chrome border-b-2 px-3 py-2 sm:px-6 shrink-0" aria-label="Quick filters">
     <div class="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
-      <button onclick="setFilter('all')" class="chip shrink-0">Total: <span id="metric-total">16</span></button>
-      <button onclick="setFilter('urgent')" class="chip shrink-0" style="color: var(--urgent); border-color: var(--urgent)">Urgent: <span id="metric-urgent">4</span></button>
-      <button onclick="setFilter('inprogress')" class="chip shrink-0" style="color: var(--warn); border-color: var(--warn)">Active: <span id="metric-inprogress">1</span></button>
-      <button onclick="openTownRun()" class="chip shrink-0" style="color: var(--warn); border-color: var(--warn)">Need Supplies: <span id="metric-supplies-needed">8</span></button>
-      <button onclick="setFilter('done')" class="chip shrink-0" style="color: var(--accent); border-color: var(--accent)">Done: <span id="metric-done">1</span></button>
-      <button id="filter-active-indicator" onclick="setFilter('all')" class="hidden chip shrink-0" style="color: var(--sky)">Clear filter</button>
+      <button onclick="setFilter('all')" data-filter="all" aria-pressed="true" class="chip shrink-0">All: <span id="metric-total">0</span></button>
+      <button onclick="setFilter('urgent')" data-filter="urgent" aria-pressed="false" class="chip shrink-0" style="color: var(--urgent); border-color: var(--urgent)">Urgent: <span id="metric-urgent">0</span></button>
+      <button onclick="setFilter('inprogress')" data-filter="inprogress" aria-pressed="false" class="chip shrink-0" style="color: var(--warn); border-color: var(--warn)">Active: <span id="metric-inprogress">0</span></button>
+      <button onclick="setFilter('need_supplies')" data-filter="need_supplies" aria-pressed="false" class="chip shrink-0" style="color: var(--warn); border-color: var(--warn)">Needs supplies: <span id="metric-supplies-needed">0</span></button>
+      <button onclick="setFilter('done')" data-filter="done" aria-pressed="false" class="chip shrink-0" style="color: var(--accent); border-color: var(--accent)">Done: <span id="metric-done">0</span></button>
+      <button id="filter-active-indicator" onclick="clearAllFilters()" class="hidden chip shrink-0" style="color: var(--sky); border-color: var(--sky)">Clear filters</button>
     </div>
   </section>
 
-  <section class="max-w-7xl mx-auto w-full px-3 py-2 sm:px-6 shrink-0">
+  <section class="max-w-7xl mx-auto w-full px-3 py-2 sm:px-6 shrink-0" aria-label="Search and filters">
     <div class="flex flex-col sm:flex-row gap-2">
       <div class="relative flex-1">
-        <input type="text" id="search-input" oninput="renderBoard()" placeholder="Search tasks, notes, or next steps..." class="input pl-3">
+        <label for="search-input" class="sr-only">Search tasks</label>
+        <input type="search" id="search-input" oninput="renderBoard()" placeholder="Search tasks, notes, next steps  ( / )" class="input pl-3">
       </div>
       <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-        <select id="filter-subject" onchange="renderBoard()" class="input w-auto"></select>
-        <select id="filter-priority" onchange="renderBoard()" class="input w-auto"></select>
-        <select id="filter-supplies" onchange="renderBoard()" class="input w-auto">
-          <option value="all">All Supplies</option>
-          <option value="Y">Ready</option>
-          <option value="N">Needed</option>
+        <select id="filter-subject" onchange="renderBoard()" aria-label="Filter by subject" class="input w-auto shrink-0"></select>
+        <select id="filter-priority" onchange="renderBoard()" aria-label="Filter by priority" class="input w-auto shrink-0"></select>
+        <select id="filter-supplies" onchange="renderBoard()" aria-label="Filter by supplies" class="input w-auto shrink-0">
+          <option value="all">Any supplies</option>
+          <option value="Y">Supplies ready</option>
+          <option value="N">Needs supplies</option>
         </select>
       </div>
     </div>
   </section>
 
   <div class="md:hidden max-w-7xl mx-auto w-full px-3 mb-2 shrink-0">
-    <div id="mobile-tabs" class="grid gap-1 p-1 rounded-xl panel text-center text-[10px] sm:text-xs" style="grid-template-columns: repeat(5, minmax(0, 1fr))"></div>
+    <div id="mobile-tabs" role="tablist" aria-label="Status columns" class="grid gap-1 p-1 rounded-xl panel text-center text-xs" style="grid-template-columns: repeat(5, minmax(0, 1fr))"></div>
   </div>
 
   <main class="max-w-7xl mx-auto w-full px-3 sm:px-6 flex-1 min-h-0 overflow-hidden flex flex-col">
     <div id="board-grid" class="grid grid-cols-1 gap-3 sm:gap-4 flex-1 min-h-0 h-full items-stretch"></div>
   </main>
 
-  <button onclick="openTaskModal()" title="Add Task"
+  <div id="live-region" class="sr-only" aria-live="polite"></div>
+  <div id="toast-host" class="fixed left-1/2 -translate-x-1/2 z-[60] w-[calc(100%-24px)] max-w-md space-y-2 pointer-events-none" style="bottom: calc(max(1.25rem, env(safe-area-inset-bottom, 0px)) + 76px)" aria-live="assertive"></div>
+
+  <button onclick="openTaskModal()" title="Add task" aria-label="Add task"
     class="sm:hidden fixed right-4 z-40 w-16 h-16 rounded-full flex items-center justify-center btn-accent border-2"
-    style="bottom: max(1.25rem, env(safe-area-inset-bottom, 0px)); border-color: var(--accent)">
-    <i data-lucide="plus" class="w-8 h-8"></i>
+    style="bottom: max(1.25rem, env(safe-area-inset-bottom, 0px)); border-color: var(--accent-fill)">
+    <i data-lucide="plus" class="w-8 h-8" aria-hidden="true"></i>
   </button>
 
-  <div id="townrun-view" class="hidden fixed inset-0 z-40 flex flex-col" style="background: var(--bg); padding-top: env(safe-area-inset-top)">
+  <dialog id="townrun-view" class="sheet" aria-labelledby="townrun-title">
     <div class="chrome border-b-2 px-3 py-3 flex items-center justify-between gap-2">
       <div>
-        <h2 class="text-lg font-black">Town Run</h2>
+        <h2 id="townrun-title" class="text-lg font-black">Town Run</h2>
         <p class="text-xs muted" id="townrun-sub">Items that still need supplies</p>
       </div>
       <button onclick="closeTownRun()" class="btn px-3 text-sm">Close</button>
     </div>
     <div id="townrun-list" class="scroll-pane flex-1 overflow-y-auto px-3 py-3 space-y-4 pb-10"></div>
-  </div>
+  </dialog>
 
-  <div id="task-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 overflow-y-auto" style="background: rgba(0,0,0,.65)">
-    <div class="card rounded-2xl w-full max-w-lg p-4 sm:p-6 space-y-4 my-auto">
+  <dialog id="task-modal" class="modal card" aria-labelledby="modal-title">
+    <div class="p-4 sm:p-6 space-y-4">
       <div class="flex items-center justify-between border-b-2 pb-3" style="border-color: var(--border)">
         <h3 id="modal-title" class="text-base font-bold">Edit Task</h3>
-        <button onclick="closeTaskModal()" class="btn px-2"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button type="button" onclick="closeTaskModal()" class="btn px-2" aria-label="Close"><i data-lucide="x" class="w-5 h-5" aria-hidden="true"></i></button>
       </div>
       <form id="task-form" onsubmit="saveTaskForm(event)" class="space-y-3.5">
         <input type="hidden" id="form-task-id">
         <div>
-          <label class="block text-[11px] font-bold uppercase mb-1">Task Summary *</label>
+          <label for="form-summary" class="field-label">Task summary (required)</label>
           <input type="text" id="form-summary" required class="input" placeholder="e.g., Replace pergola verticals with 4x4s">
         </div>
         <div>
-          <label class="block text-[11px] font-bold uppercase mb-1">Raw Brain Dump Note</label>
-          <textarea id="form-raw-note" rows="2" class="input" placeholder="Original unfiltered thought..."></textarea>
+          <label for="form-raw-note" class="field-label">Original note</label>
+          <textarea id="form-raw-note" rows="2" class="input" placeholder="The thought as you first jotted it"></textarea>
         </div>
         <div>
-          <label class="block text-[11px] font-bold uppercase mb-1">Actionable Next Step</label>
+          <label for="form-next-step" class="field-label">Next step</label>
           <input type="text" id="form-next-step" class="input" placeholder="e.g., Purchase 4x4s and anchor mounts">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-[11px] font-bold uppercase mb-1">Status</label>
+            <label for="form-status" class="field-label">Status</label>
             <select id="form-status" class="input"></select>
           </div>
           <div>
-            <label class="block text-[11px] font-bold uppercase mb-1">Priority</label>
+            <label for="form-priority" class="field-label">Priority</label>
             <select id="form-priority" class="input"></select>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-[11px] font-bold uppercase mb-1">Subject</label>
+            <label for="form-subject" class="field-label">Subject</label>
             <select id="form-subject" class="input"></select>
           </div>
           <div>
-            <label class="block text-[11px] font-bold uppercase mb-1">Category</label>
-            <select id="form-category" class="input">
-              <option value="Improvement">Improvement</option>
-              <option value="Maintenance">Maintenance</option>
-              <option value="Repair">Repair</option>
-              <option value="Errand">Errand</option>
-              <option value="Chore">Chore</option>
-            </select>
+            <label for="form-category" class="field-label">Category</label>
+            <select id="form-category" class="input"></select>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-[11px] font-bold uppercase mb-1">Estimated Effort</label>
-            <select id="form-effort" class="input">
-              <option value="<30 mins">&lt;30 mins</option>
-              <option value="1-2 hours">1-2 hours</option>
-              <option value="Half day">Half day</option>
-              <option value="Multi-day">Multi-day</option>
-            </select>
+            <label for="form-effort" class="field-label">Estimated effort</label>
+            <select id="form-effort" class="input"></select>
           </div>
           <div>
-            <label class="block text-[11px] font-bold uppercase mb-1">Supplies on Hand?</label>
+            <label for="form-supplies" class="field-label">Supplies on hand?</label>
             <select id="form-supplies" class="input">
-              <option value="Y">Yes (Ready)</option>
-              <option value="N">No (Needed)</option>
+              <option value="Y">Yes, ready</option>
+              <option value="N">No, needs supplies</option>
             </select>
           </div>
         </div>
@@ -290,53 +328,59 @@
           <button type="button" id="btn-delete-task" onclick="deleteCurrentTask()" class="hidden btn px-3 text-sm" style="color: var(--urgent)">Delete</button>
           <div class="flex items-center gap-2 ml-auto">
             <button type="button" onclick="closeTaskModal()" class="btn px-3 text-sm">Cancel</button>
-            <button type="submit" class="btn btn-accent px-4 text-sm">Save Task</button>
+            <button type="submit" class="btn btn-accent px-4 text-sm">Save task</button>
           </div>
         </div>
       </form>
     </div>
-  </div>
+  </dialog>
 
-  <div id="settings-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 overflow-y-auto" style="background: rgba(0,0,0,.65)">
-    <div class="card rounded-2xl w-full max-w-lg p-4 sm:p-6 space-y-4 my-auto">
+  <dialog id="settings-modal" class="modal card" aria-labelledby="settings-title">
+    <div class="p-4 sm:p-6 space-y-4">
       <div class="flex items-center justify-between border-b-2 pb-3" style="border-color: var(--border)">
-        <h3 class="text-base font-bold">Settings & Sync</h3>
-        <button onclick="closeSettingsModal()" class="btn px-2"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <h3 id="settings-title" class="text-base font-bold">Settings &amp; sync</h3>
+        <button type="button" onclick="closeSettingsModal()" class="btn px-2" aria-label="Close"><i data-lucide="x" class="w-5 h-5" aria-hidden="true"></i></button>
       </div>
       <div class="space-y-3 text-sm">
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="pullFromGoogleSheet()" class="btn text-sm">Refresh from sheet</button>
+          <button onclick="pushToGoogleSheet()" class="btn text-sm">Send unsynced changes</button>
+        </div>
+        <p id="settings-last-error" class="text-xs font-semibold" style="color: var(--urgent)"></p>
         <div class="browser-only panel rounded-xl p-3 text-sm">
           <p class="font-bold mb-1">Install as its own app</p>
           <ol class="list-decimal pl-5 space-y-1 muted">
-            <li>Delete the old home-screen icon if it still opens with an address bar.</li>
-            <li>Open this page in Chrome.</li>
-            <li>Tap <strong>Install</strong> above, or Chrome ⋮ → <strong>Install app</strong>.</li>
-            <li>Launch from the new icon. It should be fullscreen, no URL bar.</li>
+            <li>Open this page in Chrome (Android) or Safari (iPhone).</li>
+            <li>Chrome: ⋮ → <strong>Install app</strong>. Safari: Share → <strong>Add to Home Screen</strong>.</li>
+            <li>If an old home-screen icon still opens with an address bar, delete it. It's only a bookmark.</li>
           </ol>
           <button id="btn-install-settings" class="btn btn-accent w-full mt-3 text-sm hidden">Install app now</button>
         </div>
-        <div>
-          <label class="block text-[11px] font-bold uppercase mb-1">Google Apps Script Web App URL</label>
-          <input type="url" id="settings-script-url" class="input" placeholder="https://script.google.com/macros/s/.../exec">
-          <p class="text-[11px] muted mt-1">Pre-filled with your Brain Dump v.0 script. Keep this unless you redeploy to a new URL.</p>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="pullFromGoogleSheet()" class="btn text-sm">Pull & merge</button>
-          <button onclick="pushToGoogleSheet()" class="btn text-sm">Push dirty tasks</button>
-        </div>
-        <div class="panel rounded-xl p-3 text-[12px] leading-relaxed">
-          <p class="font-bold mb-1">Update the sheet script</p>
-          <p class="muted mb-2">Sheet → Extensions → Apps Script → replace ALL code → Save → Deploy → Manage deployments → pencil → <strong>New version</strong> → Deploy. Access must be <strong>Anyone</strong>.</p>
-          <button type="button" onclick="copyAppsScript()" class="btn w-full text-sm">Copy Apps Script to clipboard</button>
-        </div>
-        <p id="settings-last-error" class="text-xs font-semibold" style="color: var(--urgent)"></p>
-        <div class="flex items-center justify-between pt-1">
-          <button onclick="exportDataJson()" class="text-sm font-bold" style="color: var(--sky)">Export JSON</button>
-          <button onclick="resetToDefaultTasks()" class="text-sm font-bold" style="color: var(--urgent)">Reset to Default</button>
-        </div>
+        <p class="text-xs muted">Shortcuts: <kbd>/</kbd> search, <kbd>N</kbd> new task, <kbd>Esc</kbd> close.</p>
+        <details class="advanced panel rounded-xl p-3">
+          <summary class="font-bold flex items-center justify-between min-h-[44px]">Advanced <i data-lucide="chevron-down" class="w-4 h-4" aria-hidden="true"></i></summary>
+          <div class="space-y-3 mt-2">
+            <div>
+              <label for="settings-script-url" class="field-label">Google Apps Script web app URL</label>
+              <input type="url" id="settings-script-url" class="input" placeholder="https://script.google.com/macros/s/.../exec">
+              <p class="text-xs muted mt-1">Pre-filled with your Brain Dump v.0 script. Keep this unless you redeploy to a new URL.</p>
+            </div>
+            <div class="text-[13px] leading-relaxed">
+              <p class="font-bold mb-1">Update the sheet script</p>
+              <p class="muted mb-2">Sheet → Extensions → Apps Script → replace all code → Save → Deploy → Manage deployments → pencil → <strong>New version</strong> → Deploy. Access must be <strong>Anyone</strong>.</p>
+              <button type="button" onclick="copyAppsScript()" class="btn w-full text-sm">Copy Apps Script to clipboard</button>
+            </div>
+            <div class="flex items-center justify-between pt-1 gap-2">
+              <button onclick="exportDataJson()" class="btn px-3 text-sm" style="color: var(--sky)">Export JSON</button>
+              <button onclick="clearLocalCopy()" class="btn px-3 text-sm" style="color: var(--urgent)">Clear local copy</button>
+            </div>
+            <p class="text-xs muted">Clear local copy forgets the tasks stored on this device and reloads them from the sheet. It never changes the sheet.</p>
+          </div>
+        </details>
       </div>
-      <button onclick="saveSettings()" class="btn btn-accent w-full">Save Settings</button>
+      <button onclick="saveSettings()" class="btn btn-accent w-full">Save settings</button>
     </div>
-  </div>
+  </dialog>
 
   <script>
     const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyu4Xy4_59zuNaE6wT0SFAh9jNeL4atJxsFIMbLTf_qhLgbNbC_-aP6nrzp4OGF9Kfc/exec';
@@ -345,10 +389,21 @@
     const SUBJECT_SEED = ['Garden', 'Greenhouse', 'House Exterior', 'House Interior', 'Yard', 'Off-Property', 'Vehicle', 'Outbuilding'];
     const STATUS_SEED = ['Not Started', 'Queue', 'Active', 'Done'];
     const PRIORITY_SEED = ['Highest', 'High', 'Medium', 'Low', 'Lowest'];
+    const CATEGORY_SEED = ['Improvement', 'Maintenance', 'Repair', 'Errand', 'Chore'];
+    const EFFORT_SEED = ['<30 mins', '1-2 hours', 'Half day', 'Multi-day'];
     const PRIORITY_RANK = { Highest: 0, High: 1, Medium: 2, Low: 3, Lowest: 4 };
     const STATUS_QUICK_LABELS = { 'On Hold': 'Hold' };
     const STATUS_COLORS = { 'Not Started': 'var(--sky)', 'Queue': 'var(--sky)', 'Active': 'var(--warn)', 'In progress': 'var(--warn)', 'On Hold': 'var(--muted)', 'Done': 'var(--accent)' };
+    const EMPTY_HINTS = {
+      'Not Started': 'Drag a task here or tap + to add',
+      'Queue': 'Park upcoming work here',
+      'Active': 'What you are working on now',
+      'Done': 'Finished tasks land here'
+    };
     const OPTIONS_CACHE_KEY = 'farm_braindump_options_v1';
+    const TASKS_KEY = 'farm_braindump_tasks_v1';
+    const SYNCED_FLAG_KEY = 'farm_braindump_synced_once';
+
     function loadCachedOptions() {
       try {
         const o = JSON.parse(localStorage.getItem(OPTIONS_CACHE_KEY) || 'null');
@@ -363,6 +418,8 @@
     let SUBJECTS = SUBJECT_SEED.slice();
     let STATUSES = STATUS_SEED.map(value => ({ value, label: STATUS_QUICK_LABELS[value] || value }));
     let PRIORITIES = PRIORITY_SEED.slice();
+    let CATEGORIES = CATEGORY_SEED.slice();
+    let EFFORTS = EFFORT_SEED.slice();
     const DEFAULT_TASKS = [
       {"id": "task_1", "timestamp": "2026-08-02", "raw_note": "Drive t-posts into ground for garden gate posts", "summary": "Drive garden gate t-posts", "scope": "Small Task", "category": "Improvement", "subject": "Garden", "complexity": "Medium", "effort": "1-2 hours", "priority": "Medium", "status": "Done", "next_step": "Gather tools and materials", "supplies_on_hand": "Y"},
       {"id": "task_2", "timestamp": "2026-08-02", "raw_note": "Trench and bury PVC for greenhouse", "summary": "Trench and bury greenhouse PVC", "scope": "Large Project", "category": "Improvement", "subject": "Greenhouse", "complexity": "High", "effort": "Half day", "priority": "Medium", "status": "Active", "next_step": "repair irrigation to continue", "supplies_on_hand": "Y"},
@@ -388,6 +445,10 @@
     let scriptUrl = localStorage.getItem('farm_braindump_script_url') || DEFAULT_SCRIPT_URL;
     let deferredPrompt = null;
     let syncing = false;
+    let hasSyncedOnce = localStorage.getItem(SYNCED_FLAG_KEY) === '1';
+    let undoTimer = null;
+    let pendingUndo = null;
+    let lastFocusedBeforeDialog = null;
 
     document.addEventListener('DOMContentLoaded', () => {
       applyTheme(localStorage.getItem('farm_braindump_theme') || 'dark');
@@ -396,13 +457,77 @@
       renderBoard();
       setupPwa();
       updateNetworkStatus();
-      lucide.createIcons();
+      refreshIcons();
+      setupKeyboardShortcuts();
       window.addEventListener('online', () => { updateNetworkStatus(); flushDirtyTasks(); });
       window.addEventListener('offline', updateNetworkStatus);
       if (navigator.onLine && scriptUrl) {
         syncWithGoogleSheet({ quiet: true });
       }
     });
+
+    function refreshIcons(root) {
+      if (typeof lucide === 'undefined' || !lucide.createIcons) return;
+      const scope = root || document;
+      const pending = scope.querySelectorAll('i[data-lucide]');
+      if (!pending.length) return;
+      const rendered = document.querySelectorAll('svg[data-lucide]');
+      rendered.forEach(el => {
+        el.setAttribute('data-lucide-done', el.getAttribute('data-lucide'));
+        el.removeAttribute('data-lucide');
+      });
+      lucide.createIcons();
+      rendered.forEach(el => {
+        el.setAttribute('data-lucide', el.getAttribute('data-lucide-done'));
+        el.removeAttribute('data-lucide-done');
+      });
+    }
+
+    function announce(msg) {
+      const el = document.getElementById('live-region');
+      if (el) el.textContent = msg;
+    }
+
+    function showToast(message, { actionLabel, onAction, error, duration } = {}) {
+      const host = document.getElementById('toast-host');
+      const toast = document.createElement('div');
+      toast.className = 'toast pointer-events-auto rounded-xl px-3 py-3 flex items-center gap-3 ' + (error ? 'error' : '');
+      toast.setAttribute('role', 'status');
+      const text = document.createElement('p');
+      text.className = 'flex-1 text-sm font-semibold';
+      text.textContent = message;
+      toast.appendChild(text);
+      if (actionLabel && onAction) {
+        const btn = document.createElement('button');
+        btn.className = 'btn px-3 text-sm shrink-0';
+        btn.textContent = actionLabel;
+        btn.addEventListener('click', () => { onAction(); toast.remove(); });
+        toast.appendChild(btn);
+      }
+      host.appendChild(toast);
+      const ms = duration == null ? 5000 : duration;
+      if (ms > 0) setTimeout(() => toast.remove(), ms);
+      return toast;
+    }
+
+    function setupKeyboardShortcuts() {
+      document.addEventListener('keydown', (e) => {
+        const tag = (e.target && e.target.tagName) || '';
+        const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable);
+        if (e.key === 'Escape') return; // native <dialog> handles this
+        if (!typing && (e.key === '/' || (e.key === 'n' && !e.metaKey && !e.ctrlKey && !e.altKey))) {
+          if (e.key === '/') {
+            e.preventDefault();
+            const search = document.getElementById('search-input');
+            search.focus();
+            search.select();
+          } else if (e.key === 'n' || e.key === 'N') {
+            e.preventDefault();
+            openTaskModal();
+          }
+        }
+      });
+    }
 
     function unionPreserveOrder(seed, extras) {
       const out = [];
@@ -433,11 +558,16 @@
       const fromTasksPriority = tasks.map(t => (t.priority || '').trim()).filter(Boolean);
       PRIORITIES = unionPreserveOrder(baseList('priority', PRIORITY_SEED), fromTasksPriority);
 
+      const fromTasksCategory = tasks.map(t => (t.category || '').trim()).filter(Boolean);
+      CATEGORIES = unionPreserveOrder(baseList('category', CATEGORY_SEED), fromTasksCategory);
+      const fromTasksEffort = tasks.map(t => (t.effort || '').trim()).filter(Boolean);
+      EFFORTS = unionPreserveOrder(baseList('effort', EFFORT_SEED), fromTasksEffort);
+
       const filterSubject = document.getElementById('filter-subject');
       const formSubject = document.getElementById('form-subject');
       setSelectOptions(
         filterSubject,
-        ['<option value="all">All Subjects</option>'].concat(SUBJECTS.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`)).join('')
+        ['<option value="all">All subjects</option>'].concat(SUBJECTS.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`)).join('')
       );
       setSelectOptions(
         formSubject,
@@ -449,14 +579,14 @@
       const formPriority = document.getElementById('form-priority');
       const priorityLabels = {
         Highest: 'Highest',
-        High: 'High (Urgent)',
+        High: 'High (urgent)',
         Medium: 'Medium',
         Low: 'Low',
         Lowest: 'Lowest'
       };
       setSelectOptions(
         filterPriority,
-        ['<option value="all">All Priorities</option>'].concat(PRIORITIES.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`)).join('')
+        ['<option value="all">All priorities</option>'].concat(PRIORITIES.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`)).join('')
       );
       setSelectOptions(
         formPriority,
@@ -469,6 +599,19 @@
         formStatus,
         statusValues.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join(''),
         formStatus.value || defaultStatus()
+      );
+
+      const formCategory = document.getElementById('form-category');
+      setSelectOptions(
+        formCategory,
+        CATEGORIES.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join(''),
+        formCategory.value || 'Improvement'
+      );
+      const formEffort = document.getElementById('form-effort');
+      setSelectOptions(
+        formEffort,
+        EFFORTS.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join(''),
+        formEffort.value || '1-2 hours'
       );
       buildBoardColumns();
     }
@@ -507,14 +650,15 @@
         document.body.classList.add('standalone');
         return;
       }
-      const banner = document.getElementById('install-banner');
-      if (localStorage.getItem('farm_braindump_hide_install') !== '1') banner.classList.remove('hidden');
+      // Install banner only after beforeinstallprompt (or Settings instructions). Never show by default.
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
         document.getElementById('btn-install').classList.remove('hidden');
         document.getElementById('btn-install-settings').classList.remove('hidden');
-        banner.classList.remove('hidden');
+        if (localStorage.getItem('farm_braindump_hide_install') !== '1') {
+          document.getElementById('install-banner').classList.remove('hidden');
+        }
       });
       document.getElementById('btn-install').addEventListener('click', installApp);
       document.getElementById('btn-install-settings').addEventListener('click', installApp);
@@ -522,12 +666,13 @@
 
     async function installApp() {
       if (!deferredPrompt) {
-        alert('In Chrome: tap the ⋮ menu → Install app.\n\nIf you already added a home-screen shortcut, delete it first. That old icon is a bookmark and will keep the address bar.');
+        alert('In Chrome: tap the ⋮ menu → Install app.\\n\\nIf you already added a home-screen shortcut, delete it first. That old icon is a bookmark and will keep the address bar.');
         return;
       }
       deferredPrompt.prompt();
       await deferredPrompt.userChoice;
       deferredPrompt = null;
+      hideInstallBanner();
     }
 
     function hideInstallBanner() {
@@ -540,9 +685,16 @@
       document.documentElement.classList.toggle('dark', theme !== 'sun');
       localStorage.setItem('farm_braindump_theme', theme);
       document.getElementById('meta-theme-color').setAttribute('content', theme === 'sun' ? '#f3e6c4' : '#0b1220');
+      const metaCs = document.querySelector('meta[name="color-scheme"]');
+      if (metaCs) metaCs.setAttribute('content', theme === 'sun' ? 'light' : 'dark');
       const btn = document.getElementById('btn-theme');
-      if (btn) btn.innerHTML = theme === 'sun' ? '<i data-lucide="moon" class="w-5 h-5"></i>' : '<i data-lucide="sun" class="w-5 h-5"></i>';
-      lucide.createIcons();
+      if (btn) {
+        btn.innerHTML = theme === 'sun'
+          ? '<i data-lucide="moon" class="w-5 h-5" aria-hidden="true"></i>'
+          : '<i data-lucide="sun" class="w-5 h-5" aria-hidden="true"></i>';
+        btn.setAttribute('aria-label', theme === 'sun' ? 'Switch to dark theme' : 'Switch to outdoor (sun) theme');
+      }
+      refreshIcons(btn);
     }
 
     function toggleTheme() {
@@ -573,12 +725,13 @@
     }
 
     function loadTasks() {
-      const saved = localStorage.getItem('farm_braindump_tasks_v1');
+      const saved = localStorage.getItem(TASKS_KEY);
       if (saved) {
         try { tasks = JSON.parse(saved).map(migrateTask); }
-        catch (e) { tasks = DEFAULT_TASKS.map(t => migrateTask({ ...t })); }
+        catch (e) { tasks = DEFAULT_TASKS.map(t => migrateTask({ ...t, dirty: false, seed: true })); }
       } else {
-        tasks = DEFAULT_TASKS.map(t => migrateTask({ ...t }));
+        // Offline bootstrap only. Never mark seeds dirty — a successful pull will drop them if the sheet disagrees.
+        tasks = DEFAULT_TASKS.map(t => migrateTask({ ...t, dirty: false, seed: true }));
         saveTasksLocally();
       }
       if (!localStorage.getItem('farm_braindump_script_url')) {
@@ -587,33 +740,69 @@
     }
 
     function saveTasksLocally() {
-      localStorage.setItem('farm_braindump_tasks_v1', JSON.stringify(tasks));
-      document.getElementById('storage-count-text').textContent = tasks.length + ' tasks';
+      localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
+      const el = document.getElementById('storage-count-text');
+      if (el) el.textContent = tasks.length + ' tasks';
     }
 
     function markDirty(task) {
       task.dirty = true;
+      task.seed = false;
       task.updated_at = Date.now();
       saveTasksLocally();
+    }
+
+    function setSyncDot(state) {
+      const dot = document.getElementById('sync-dot');
+      if (dot) dot.setAttribute('data-state', state);
+    }
+
+    function showSyncError(msg) {
+      const banner = document.getElementById('sync-error-banner');
+      const text = document.getElementById('sync-error-text');
+      if (text) text.textContent = msg || "Couldn't reach the sheet — your changes are saved on this phone.";
+      if (banner) {
+        banner.classList.remove('hidden');
+        refreshIcons(banner);
+      }
+      setSyncDot('error');
+    }
+
+    function hideSyncError() {
+      const banner = document.getElementById('sync-error-banner');
+      if (banner) banner.classList.add('hidden');
     }
 
     function updateNetworkStatus() {
       const el = document.getElementById('sync-status-text');
       if (!navigator.onLine) {
         el.textContent = 'Offline — saved on this phone';
+        setSyncDot('offline');
         return;
       }
       const dirty = tasks.filter(t => t.dirty).length;
-      if (dirty) el.textContent = dirty + ' change' + (dirty === 1 ? '' : 's') + ' waiting to sync';
-      else el.textContent = scriptUrl ? 'Online, sheet connected' : 'Online, no sheet URL';
+      if (dirty) {
+        el.textContent = dirty + ' change' + (dirty === 1 ? '' : 's') + ' waiting to sync';
+        setSyncDot('pending');
+      } else {
+        el.textContent = scriptUrl
+          ? (hasSyncedOnce ? 'Up to date with the sheet' : 'Online, sheet connected')
+          : 'Online, no sheet URL';
+        setSyncDot(hasSyncedOnce ? 'ok' : 'ok');
+      }
     }
 
     function setSyncMessage(text, ok) {
       const el = document.getElementById('sync-status-text');
-      el.textContent = text;
-      el.style.color = ok === false ? 'var(--urgent)' : ok === true ? 'var(--accent)' : 'var(--muted)';
+      el.textContent = ok === false ? 'Not synced' : text;
+      el.style.color = ok === false ? 'var(--urgent)' : ok === true ? 'var(--accent)' : '';
       const errEl = document.getElementById('settings-last-error');
       if (errEl) errEl.textContent = ok === false ? text : '';
+      if (ok === false) showSyncError(text);
+      else if (ok === true) hideSyncError();
+      if (ok === false) setSyncDot('error');
+      else if (ok === true) setSyncDot('ok');
+      else setSyncDot('busy');
     }
 
     function defaultStatus() {
@@ -621,8 +810,6 @@
       return base.includes('Not Started') ? 'Not Started' : (base[0] || 'Not Started');
     }
 
-    // Only canonicalises case/whitespace against known lists. Never maps one status onto another,
-    // so a renamed/unknown status keeps its own value (and gets its own column).
     function normalizeStatus(status) {
       const raw = String(status == null ? '' : status).trim();
       if (!raw) return defaultStatus();
@@ -655,12 +842,12 @@
         const id = columnDomId(v);
         const color = STATUS_COLORS[v] ? ` style="color: ${STATUS_COLORS[v]}"` : '';
         return `
-      <div id="col-container-${escapeHtml(id)}" data-status="${escapeHtml(v)}" class="panel rounded-2xl p-3 flex flex-col h-full min-h-0 overflow-hidden">
+      <div id="col-container-${escapeHtml(id)}" data-status="${escapeHtml(v)}" class="panel rounded-2xl p-3 flex flex-col h-full min-h-0 overflow-hidden" role="region" aria-label="${escapeHtml(v)}">
         <div class="flex items-center justify-between pb-2 mb-2 border-b-2 shrink-0" style="border-color: var(--border)">
-          <h2 class="text-xs font-bold uppercase tracking-wider"${color}>${escapeHtml(v)}</h2>
+          <h2 class="text-[13px] font-bold tracking-wide"${color}>${escapeHtml(v)}</h2>
           <span id="count-${escapeHtml(id)}" class="text-xs font-bold px-2 py-0.5 rounded-full border-2" style="border-color: var(--border)">0</span>
         </div>
-        <div id="column-${escapeHtml(id)}" data-status="${escapeHtml(v)}" class="kanban-cards-list space-y-3 flex-1 min-h-0 overflow-y-auto pb-24 md:pb-3"></div>
+        <div id="column-${escapeHtml(id)}" data-status="${escapeHtml(v)}" class="kanban-cards-list space-y-3 flex-1 min-h-0 overflow-y-auto pb-28 md:pb-3"></div>
       </div>`;
       }).join('');
       const tabsEl = document.getElementById('mobile-tabs');
@@ -670,6 +857,9 @@
         const id = columnDomId(st.value);
         const btn = document.createElement('button');
         btn.id = 'tab-' + id;
+        btn.type = 'button';
+        btn.setAttribute('role', 'tab');
+        btn.setAttribute('aria-selected', 'false');
         btn.className = 'chip';
         btn.addEventListener('click', () => setMobileTab(st.value));
         btn.innerHTML = `${escapeHtml(st.label)} (<span id="tab-count-${escapeHtml(id)}">0</span>)`;
@@ -678,6 +868,26 @@
       if (!values.includes(activeMobileTab)) activeMobileTab = values.includes(defaultStatus()) ? defaultStatus() : values[0];
       setMobileTab(activeMobileTab);
       initSortable();
+    }
+
+    function taskMatchesFilters(task) {
+      const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
+      const subjectVal = document.getElementById('filter-subject').value;
+      const priorityVal = document.getElementById('filter-priority').value;
+      const suppliesVal = document.getElementById('filter-supplies').value;
+      const normStatus = normalizeStatus(task.status);
+      if (searchVal) {
+        const text = `${task.summary || ''} ${task.raw_note || ''} ${task.next_step || ''} ${task.subject || ''}`.toLowerCase();
+        if (!text.includes(searchVal)) return false;
+      }
+      if (subjectVal !== 'all' && task.subject !== subjectVal) return false;
+      if (priorityVal !== 'all' && task.priority !== priorityVal) return false;
+      if (suppliesVal !== 'all' && task.supplies_on_hand !== suppliesVal) return false;
+      if (currentFilter === 'urgent' && !isUrgentPriority(task.priority)) return false;
+      if (currentFilter === 'inprogress' && !isActiveStatus(normStatus)) return false;
+      if (currentFilter === 'need_supplies' && task.supplies_on_hand !== 'N') return false;
+      if (currentFilter === 'done' && !isDoneStatus(normStatus)) return false;
+      return true;
     }
 
     function renderBoard() {
@@ -690,28 +900,14 @@
         counts[st.value] = 0;
         bucket[st.value] = [];
       });
-      Object.values(cols).forEach(c => c.innerHTML = '');
-      const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
-      const subjectVal = document.getElementById('filter-subject').value;
-      const priorityVal = document.getElementById('filter-priority').value;
-      const suppliesVal = document.getElementById('filter-supplies').value;
+      Object.values(cols).forEach(c => { if (c) c.innerHTML = ''; });
 
+      let visibleTotal = 0;
       tasks.forEach(task => {
         const normStatus = normalizeStatus(task.status);
-        let matches = true;
-        if (searchVal) {
-          const text = `${task.summary || ''} ${task.raw_note || ''} ${task.next_step || ''} ${task.subject || ''}`.toLowerCase();
-          if (!text.includes(searchVal)) matches = false;
-        }
-        if (subjectVal !== 'all' && task.subject !== subjectVal) matches = false;
-        if (priorityVal !== 'all' && task.priority !== priorityVal) matches = false;
-        if (suppliesVal !== 'all' && task.supplies_on_hand !== suppliesVal) matches = false;
-        if (currentFilter === 'urgent' && !isUrgentPriority(task.priority)) matches = false;
-        if (currentFilter === 'inprogress' && !isActiveStatus(normStatus)) matches = false;
-        if (currentFilter === 'need_supplies' && task.supplies_on_hand !== 'N') matches = false;
-        if (currentFilter === 'done' && !isDoneStatus(normStatus)) matches = false;
         counts[normStatus] = (counts[normStatus] || 0) + 1;
-        if (!matches) return;
+        if (!taskMatchesFilters(task)) return;
+        visibleTotal += 1;
         if (bucket[normStatus]) bucket[normStatus].push(task);
       });
 
@@ -725,20 +921,24 @@
         const id = columnDomId(st.value);
         const c = document.getElementById('count-' + id);
         const tc = document.getElementById('tab-count-' + id);
-        if (c) c.textContent = counts[st.value] || 0;
-        if (tc) tc.textContent = counts[st.value] || 0;
+        // Column/tab counts reflect filtered visibility for the active filters, except the
+        // absolute column occupancy uses all tasks in that status when no chip filter is on.
+        const filteredInCol = (bucket[st.value] || []).length;
+        if (c) c.textContent = filteredInCol;
+        if (tc) tc.textContent = filteredInCol;
       });
 
-      Object.values(cols).forEach(container => {
+      Object.entries(cols).forEach(([status, container]) => {
         if (container && container.children.length === 0) {
-          container.innerHTML = '<div class="p-6 text-center muted border-2 border-dashed rounded-xl text-xs" style="border-color: var(--border)">No tasks</div>';
+          const hint = EMPTY_HINTS[status] || 'Drag a task here or tap + to add';
+          container.innerHTML = `<div class="p-6 text-center muted border-2 border-dashed rounded-xl text-[13px]" style="border-color: var(--border)"><p class="font-semibold mb-1">No tasks</p><p>${escapeHtml(hint)}</p></div>`;
         }
       });
 
       updateMobileVisibility();
-      updateMetrics();
-      if (document.getElementById('townrun-view').classList.contains('hidden') === false) renderTownRun();
-      lucide.createIcons();
+      updateMetrics(visibleTotal);
+      if (document.getElementById('townrun-view').open) renderTownRun();
+      refreshIcons(document.getElementById('board-grid'));
     }
 
     function createCardElement(task) {
@@ -759,38 +959,77 @@
             <span class="px-2 py-1 rounded-lg border-2" style="border-color: ${badge.urgent ? badge.color : 'var(--border)'}; color: ${badge.color}">${escapeHtml(badge.label)}</span>
             <span class="px-2 py-1 rounded-lg border-2 muted" style="border-color: var(--border)">${escapeHtml(task.effort || '')}</span>
           </div>
-          <button type="button" onclick="openTaskModal('${escapeHtml(task.id)}')" class="btn px-2 shrink-0" title="Edit"><i data-lucide="edit-2" class="w-5 h-5"></i></button>
+          <button type="button" onclick="openTaskModal('${escapeHtml(task.id)}')" class="btn px-2 shrink-0" title="Edit" aria-label="Edit ${escapeHtml(task.summary || 'task')}"><i data-lucide="edit-2" class="w-5 h-5" aria-hidden="true"></i></button>
         </div>
         <h4 class="text-sm font-bold leading-snug mb-1">${escapeHtml(task.summary || task.raw_note)}</h4>
         ${task.raw_note && task.raw_note !== task.summary ? `<p class="text-xs muted mb-2">${escapeHtml(task.raw_note)}</p>` : ''}
         ${task.next_step ? `<div class="rounded-lg p-2.5 my-2 text-sm font-semibold" style="background: var(--bg); border: 2px solid var(--border)">Next: ${escapeHtml(task.next_step)}</div>` : ''}
-        <button type="button" onclick="toggleSupplies('${escapeHtml(task.id)}', event)" class="btn w-full text-sm mb-2 ${ready ? '' : 'btn-accent'}" style="${ready ? 'border-color: var(--accent); color: var(--accent)' : ''}">
-          ${ready ? '✓ Supplies ready' : '⚠ Need supplies — tap when bought'}
-        </button>
-        <div class="grid gap-1" style="grid-template-columns: repeat(${Math.max(1, STATUSES.length)}, minmax(0, 1fr))">${statusBtns}</div>
+        <div class="flex flex-wrap items-center gap-2 mb-2">
+          <button type="button" onclick="toggleSupplies('${escapeHtml(task.id)}', event)" class="supplies-chip ${ready ? 'ready' : 'needed'}" aria-pressed="${ready ? 'true' : 'false'}">
+            <i data-lucide="${ready ? 'check' : 'alert-triangle'}" class="w-4 h-4" aria-hidden="true"></i>
+            ${ready ? 'Supplies ready' : 'Needs supplies'}
+          </button>
+          <button type="button" class="move-toggle" aria-expanded="false" onclick="toggleCardMove(this)" aria-label="Move task">
+            Move <i data-lucide="chevron-down" class="w-4 h-4" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div class="status-row hidden" data-move-panel>${statusBtns}</div>
       `;
       return card;
     }
 
-    function updateMetrics() {
+    function toggleCardMove(btn) {
+      const panel = btn.parentElement && btn.parentElement.nextElementSibling;
+      if (!panel || !panel.hasAttribute('data-move-panel')) return;
+      const open = panel.classList.toggle('hidden') === false;
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      refreshIcons(btn);
+    }
+
+    function updateMetrics(visibleTotal) {
       const need = tasks.filter(t => t.supplies_on_hand === 'N' && !isDoneStatus(t.status)).length;
-      document.getElementById('metric-total').textContent = tasks.length;
+      document.getElementById('metric-total').textContent = (visibleTotal == null ? tasks.length : visibleTotal);
       document.getElementById('metric-urgent').textContent = tasks.filter(t => isUrgentPriority(t.priority) && !isDoneStatus(t.status)).length;
       document.getElementById('metric-inprogress').textContent = tasks.filter(t => isActiveStatus(t.status)).length;
       document.getElementById('metric-supplies-needed').textContent = need;
       document.getElementById('metric-done').textContent = tasks.filter(t => isDoneStatus(t.status)).length;
       document.getElementById('townrun-badge').textContent = need;
-      document.getElementById('filter-active-indicator').classList.toggle('hidden', currentFilter === 'all');
+      const hasExtra = currentFilter !== 'all'
+        || document.getElementById('search-input').value.trim()
+        || document.getElementById('filter-subject').value !== 'all'
+        || document.getElementById('filter-priority').value !== 'all'
+        || document.getElementById('filter-supplies').value !== 'all';
+      document.getElementById('filter-active-indicator').classList.toggle('hidden', !hasExtra);
       updateNetworkStatus();
     }
 
-    function setFilter(filterType) { currentFilter = filterType; renderBoard(); }
+    function setFilter(filterType) {
+      currentFilter = filterType;
+      document.querySelectorAll('[data-filter]').forEach(btn => {
+        const on = btn.getAttribute('data-filter') === filterType;
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      renderBoard();
+    }
+
+    function clearAllFilters() {
+      document.getElementById('search-input').value = '';
+      document.getElementById('filter-subject').value = 'all';
+      document.getElementById('filter-priority').value = 'all';
+      document.getElementById('filter-supplies').value = 'all';
+      setFilter('all');
+    }
 
     function setMobileTab(tab) {
       activeMobileTab = tab;
       STATUSES.forEach(st => {
         const btn = document.getElementById('tab-' + columnDomId(st.value));
-        if (btn) btn.className = 'chip' + (st.value === tab ? ' active' : '');
+        if (!btn) return;
+        const on = st.value === tab;
+        btn.className = 'chip' + (on ? ' active' : '');
+        btn.setAttribute('aria-selected', on ? 'true' : 'false');
+        btn.setAttribute('tabindex', on ? '0' : '-1');
       });
       updateMobileVisibility();
     }
@@ -865,14 +1104,22 @@
     }
 
     function openTownRun() {
-      document.getElementById('townrun-view').classList.remove('hidden');
+      const dlg = document.getElementById('townrun-view');
+      lastFocusedBeforeDialog = document.activeElement;
+      if (!dlg.open) dlg.showModal();
       renderTownRun();
-      lucide.createIcons();
+      refreshIcons(dlg);
     }
 
     function closeTownRun() {
-      document.getElementById('townrun-view').classList.add('hidden');
+      const dlg = document.getElementById('townrun-view');
+      if (dlg.open) dlg.close();
+      if (lastFocusedBeforeDialog && lastFocusedBeforeDialog.focus) lastFocusedBeforeDialog.focus();
     }
+
+    document.getElementById('townrun-view').addEventListener('close', () => {
+      if (lastFocusedBeforeDialog && lastFocusedBeforeDialog.focus) lastFocusedBeforeDialog.focus();
+    });
 
     function renderTownRun() {
       const needed = tasks.filter(t => t.supplies_on_hand !== 'Y' && !isDoneStatus(t.status));
@@ -897,12 +1144,18 @@
             <button class="btn btn-accent w-full text-sm" onclick="toggleSupplies('${escapeHtml(t.id)}')">Mark supplies ready</button>
           </div>
         `).join('');
-        return `<section><h3 class="text-sm font-black uppercase tracking-wide mb-2">${escapeHtml(subject)} (${groups[subject].length})</h3><div class="space-y-2">${items}</div></section>`;
+        return `<section><h3 class="text-[13px] font-bold tracking-wide mb-2">${escapeHtml(subject)} (${groups[subject].length})</h3><div class="space-y-2">${items}</div></section>`;
       }).join('');
     }
 
+    function openDialog(id) {
+      const modal = document.getElementById(id);
+      lastFocusedBeforeDialog = document.activeElement;
+      if (!modal.open) modal.showModal();
+      refreshIcons(modal);
+    }
+
     function openTaskModal(taskId = null) {
-      const modal = document.getElementById('task-modal');
       const deleteBtn = document.getElementById('btn-delete-task');
       if (taskId) {
         const task = tasks.find(t => t.id === taskId);
@@ -929,7 +1182,7 @@
         document.getElementById('form-effort').value = task.effort || '1-2 hours';
         document.getElementById('form-supplies').value = task.supplies_on_hand || 'N';
         deleteBtn.classList.remove('hidden');
-        document.getElementById('modal-title').textContent = 'Edit Task';
+        document.getElementById('modal-title').textContent = 'Edit task';
       } else {
         refreshDynamicSelects();
         document.getElementById('form-task-id').value = '';
@@ -943,19 +1196,22 @@
         document.getElementById('form-effort').value = '1-2 hours';
         document.getElementById('form-supplies').value = 'N';
         deleteBtn.classList.add('hidden');
-        document.getElementById('modal-title').textContent = 'New Task';
+        document.getElementById('modal-title').textContent = 'New task';
       }
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-      lucide.createIcons();
+      openDialog('task-modal');
+      setTimeout(() => document.getElementById('form-summary').focus(), 30);
     }
 
     function closeTaskModal() {
       const modal = document.getElementById('task-modal');
-      modal.classList.add('hidden');
       pinnedStatus = null;
-      modal.classList.remove('flex');
+      if (modal.open) modal.close();
     }
+
+    document.getElementById('task-modal').addEventListener('close', () => {
+      pinnedStatus = null;
+      if (lastFocusedBeforeDialog && lastFocusedBeforeDialog.focus) lastFocusedBeforeDialog.focus();
+    });
 
     function saveTaskForm(e) {
       e.preventDefault();
@@ -987,6 +1243,7 @@
           ...payload
         });
         newTask.dirty = true;
+        newTask.seed = false;
         tasks.unshift(newTask);
         saveTasksLocally();
         triggerSingleTaskSync(newTask, 'add_task');
@@ -998,28 +1255,69 @@
     function deleteCurrentTask() {
       const id = document.getElementById('form-task-id').value;
       if (!id) return;
-      if (!confirm('Delete this task?')) return;
       const task = tasks.find(t => t.id === id);
+      if (!task) return;
+      if (!confirm('Delete this task? You can undo for a few seconds.')) return;
+
+      // Optimistic remove
+      const snapshot = JSON.parse(JSON.stringify(task));
+      const idx = tasks.findIndex(t => t.id === id);
       tasks = tasks.filter(t => t.id !== id);
       saveTasksLocally();
       closeTaskModal();
       renderBoard();
-      if (task && scriptUrl) postToSheet({ action: 'delete_task', task }).catch(() => {});
+
+      if (undoTimer) clearTimeout(undoTimer);
+      pendingUndo = { snapshot, idx };
+      const toast = showToast('Task deleted', {
+        actionLabel: 'Undo',
+        onAction: () => {
+          if (!pendingUndo) return;
+          const { snapshot: s, idx: i } = pendingUndo;
+          pendingUndo = null;
+          if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; }
+          tasks.splice(Math.min(i, tasks.length), 0, migrateTask(s));
+          saveTasksLocally();
+          renderBoard();
+          announce('Task restored');
+        },
+        duration: 5000
+      });
+
+      undoTimer = setTimeout(async () => {
+        pendingUndo = null;
+        // Fire the sheet delete after the undo window; surface failures and restore.
+        if (!scriptUrl) return;
+        try {
+          await postToSheet({ action: 'delete_task', task: snapshot });
+          announce('Deleted from sheet');
+        } catch (err) {
+          // Restore if the sheet still has it and we failed to delete
+          if (!tasks.find(t => t.id === snapshot.id)) {
+            tasks.splice(Math.min(idx, tasks.length), 0, migrateTask(snapshot));
+            saveTasksLocally();
+            renderBoard();
+          }
+          showToast("Couldn't delete from the sheet — task restored. " + (err && err.message ? err.message : ''), { error: true, duration: 8000 });
+          setSyncMessage("Couldn't delete from the sheet — task restored", false);
+        }
+        try { toast.remove(); } catch (e) {}
+      }, 5000);
     }
 
     function openSettingsModal() {
       document.getElementById('settings-script-url').value = scriptUrl;
-      const modal = document.getElementById('settings-modal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-      lucide.createIcons();
+      openDialog('settings-modal');
     }
 
     function closeSettingsModal() {
       const modal = document.getElementById('settings-modal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
+      if (modal.open) modal.close();
     }
+
+    document.getElementById('settings-modal').addEventListener('close', () => {
+      if (lastFocusedBeforeDialog && lastFocusedBeforeDialog.focus) lastFocusedBeforeDialog.focus();
+    });
 
     function saveSettings() {
       scriptUrl = document.getElementById('settings-script-url').value.trim() || DEFAULT_SCRIPT_URL;
@@ -1034,7 +1332,7 @@
         const res = await fetch('./apps-script.js?t=' + Date.now(), { cache: 'no-store' });
         const text = await res.text();
         await navigator.clipboard.writeText(text);
-        alert('New Apps Script copied.\n\n1. Brain Dump sheet → Extensions → Apps Script\n2. Select all old code, paste this over it, Save\n3. Deploy → Manage deployments → pencil → New version → Deploy\n4. Access: Anyone\n5. Come back here and tap Sync.');
+        alert('New Apps Script copied.\\n\\n1. Brain Dump sheet → Extensions → Apps Script\\n2. Select all old code, paste this over it, Save\\n3. Deploy → Manage deployments → pencil → New version → Deploy\\n4. Access: Anyone\\n5. Come back here and tap Sync.');
       } catch (e) {
         window.open('./apps-script.js', '_blank');
       }
@@ -1050,14 +1348,31 @@
       a.remove();
     }
 
-    function resetToDefaultTasks() {
-      if (!confirm('Reset all tasks to default Brain Dump v.0 items?')) return;
-      tasks = DEFAULT_TASKS.map(t => migrateTask({ ...t, dirty: true }));
+    // Never pushes anything to the sheet. Drops local storage and re-pulls.
+    function clearLocalCopy() {
+      if (!confirm('Clear the local copy on this device? Your Google Sheet is unchanged. The app will reload from the sheet.')) return;
+      localStorage.removeItem(TASKS_KEY);
+      localStorage.removeItem(SYNCED_FLAG_KEY);
+      hasSyncedOnce = false;
+      tasks = [];
       saveTasksLocally();
       closeSettingsModal();
       renderBoard();
+      if (scriptUrl && navigator.onLine) {
+        setSyncMessage('Updating from sheet…', null);
+        syncWithGoogleSheet();
+      } else {
+        // Offline fallback: show seeds with dirty:false so they never push.
+        tasks = DEFAULT_TASKS.map(t => migrateTask({ ...t, dirty: false, seed: true }));
+        saveTasksLocally();
+        renderBoard();
+        showToast('Offline — showing sample tasks. They will not be sent to the sheet.', { duration: 6000 });
+      }
     }
 
+    // After a successful pull the sheet is source of truth.
+    // Keep only unmatched local tasks that are dirty (local creates/edits not yet on the sheet).
+    // Clean (or seed) unmatched locals are dropped so deleted/renamed sheet rows stay gone.
     function mergeTasks(local, remote) {
       const localById = new Map();
       const localByFp = new Map();
@@ -1076,11 +1391,13 @@
         } else if (lt && lt.dirty) {
           merged.push(Object.assign(migrateTask(rt), { dirty: true }));
         } else {
-          merged.push(Object.assign(rt, { dirty: false }));
+          merged.push(Object.assign(rt, { dirty: false, seed: false }));
         }
       });
       local.forEach(t => {
-        if (!used.has(t.id)) merged.push(t);
+        if (used.has(t.id)) return;
+        if (t.dirty) merged.push(t); // keep unsynced local creates/edits
+        // else drop: sheet deleted it, or it was a seed/stale cache entry
       });
       return merged;
     }
@@ -1147,6 +1464,7 @@
     }
 
     // Read-only. Older Apps Script deployments answer {status:'ignored'}; then we keep cached/seed lists.
+    // Category / effort are optional: if the options endpoint ever returns them we use them (no sheet change required).
     async function fetchSheetOptions() {
       if (!scriptUrl || !navigator.onLine) return false;
       let data = null;
@@ -1164,8 +1482,15 @@
       const o = data && data.options;
       if (!o || typeof o !== 'object') return false;
       const clean = v => Array.isArray(v) ? v.map(x => String(x == null ? '' : x).trim()).filter(Boolean) : [];
-      const next = { status: clean(o.status), priority: clean(o.priority), subject: clean(o.subject), fetched_at: Date.now() };
-      if (!next.status.length && !next.priority.length && !next.subject.length) return false;
+      const next = {
+        status: clean(o.status),
+        priority: clean(o.priority),
+        subject: clean(o.subject),
+        category: clean(o.category),
+        effort: clean(o.effort),
+        fetched_at: Date.now()
+      };
+      if (!next.status.length && !next.priority.length && !next.subject.length && !next.category.length && !next.effort.length) return false;
       sheetOptions = next;
       try { localStorage.setItem(OPTIONS_CACHE_KEY, JSON.stringify(next)); } catch (e) {}
       return true;
@@ -1185,7 +1510,7 @@
         setSyncMessage('Saved to Google Sheet', true);
         updateNetworkStatus();
       } catch (err) {
-        setSyncMessage('Sheet save failed: ' + (err && err.message ? err.message : err), false);
+        setSyncMessage("Couldn't reach the sheet — your changes are saved on this phone.", false);
       }
     }
 
@@ -1199,7 +1524,7 @@
         setSyncMessage('Caught up with Google Sheet', true);
         updateNetworkStatus();
       } catch (e) {
-        setSyncMessage('Sheet catch-up failed: ' + (e && e.message ? e.message : e), false);
+        setSyncMessage("Couldn't reach the sheet — your changes are saved on this phone.", false);
       }
     }
 
@@ -1209,11 +1534,22 @@
       syncing = true;
       const syncIcon = document.getElementById('sync-icon');
       syncIcon.classList.add('animate-spin');
-      if (!opts.quiet) setSyncMessage('Merging with Google Sheet…', null);
+      setSyncMessage(opts.quiet ? 'Updating from sheet…' : 'Updating from sheet…', null);
       try {
         await fetchSheetOptions();
         const remote = await getFromSheet();
+        // Empty successful pull with existing local tasks is treated as a bad/partial
+        // response (wrong tab, auth quirk, etc.) — keep local and warn instead of wiping.
+        if (Array.isArray(remote) && remote.length === 0 && tasks.length > 0) {
+          refreshDynamicSelects();
+          renderBoard();
+          setSyncMessage('Sheet returned no tasks — kept your local list. Check the sheet or try again.', false);
+          updateNetworkStatus();
+          return;
+        }
         tasks = mergeTasks(tasks, remote);
+        hasSyncedOnce = true;
+        localStorage.setItem(SYNCED_FLAG_KEY, '1');
         saveTasksLocally();
         refreshDynamicSelects();
         renderBoard();
@@ -1224,11 +1560,12 @@
           saveTasksLocally();
           setSyncMessage('Merged — kept your phone edits and updated the sheet', true);
         } else {
-          setSyncMessage('Merged with Google Sheet', true);
+          setSyncMessage('Up to date with the sheet', true);
         }
         updateNetworkStatus();
       } catch (e) {
-        setSyncMessage('Sync failed: ' + (e && e.message ? e.message : e), false);
+        const msg = "Couldn't reach the sheet — your changes are saved on this phone.";
+        setSyncMessage(msg, false);
       } finally {
         syncIcon.classList.remove('animate-spin');
         syncing = false;
@@ -1243,17 +1580,20 @@
     async function pushToGoogleSheet() {
       if (!scriptUrl) { alert('No Google Apps Script URL set.'); return; }
       const dirty = tasks.filter(t => t.dirty);
-      const payload = dirty.length ? dirty : tasks;
-      setSyncMessage('Pushing to sheet…', null);
+      if (!dirty.length) {
+        showToast('Nothing to send — everything is already on the sheet.', { duration: 4000 });
+        return;
+      }
+      setSyncMessage('Sending unsynced changes…', null);
       try {
-        await postToSheet({ action: 'sync_all', tasks: payload });
-        payload.forEach(t => { t.dirty = false; });
+        await postToSheet({ action: 'sync_all', tasks: dirty });
+        dirty.forEach(t => { t.dirty = false; });
         saveTasksLocally();
-        setSyncMessage('Pushed to Google Sheet', true);
+        setSyncMessage('Sent changes to Google Sheet', true);
         closeSettingsModal();
       } catch (e) {
-        alert('Could not push to the sheet. If you just updated Apps Script, deploy a new version with access set to Anyone.\n\n' + e.message);
-        setSyncMessage('Push failed — phone copy kept', false);
+        alert("Couldn't send changes to the sheet. If you just updated Apps Script, deploy a new version with access set to Anyone.\\n\\n" + e.message);
+        setSyncMessage("Couldn't reach the sheet — your changes are saved on this phone.", false);
       }
     }
   </script>

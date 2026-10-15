@@ -1,13 +1,28 @@
-const CACHE = 'farm-kanban-v6';
+const CACHE = 'farm-kanban-v7';
 const PRECACHE = [
   './',
   './index.html',
+  './tailwind.css',
   './manifest.webmanifest',
+  './vendor/lucide-0.454.0.min.js',
+  './vendor/sortable-1.15.2.min.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
   './icons/apple-touch-icon.png'
 ];
+
+// Only cache our own files (all app assets are vendored same-origin) and pinned CDN paths.
+// Apps Script / Google responses are never cached, so the cache stays bounded.
+const PINNED_CDN_PREFIXES = [
+  'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/',
+  'https://unpkg.com/lucide@0.454.0/'
+];
+
+function mayCache(url) {
+  if (url.origin === self.location.origin) return true;
+  return PINNED_CDN_PREFIXES.some((p) => url.href.startsWith(p));
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -28,6 +43,8 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
+  if (!mayCache(url)) return; // let the browser handle it, no caching
+
   const isAppDoc = req.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname.endsWith('/braindump-kanban/');
 
   if (isAppDoc) {
